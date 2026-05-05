@@ -13,6 +13,7 @@
   "expect": {
     "minWaveCount": 1,
     "audioUnlocked": true,
-    "musicActive": true
+    "musicActive": true,
+    "anyZombieVisualAssetIncludes": "普通僵尸走路.gif"
   }
 }

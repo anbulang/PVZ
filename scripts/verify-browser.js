@@ -113,3 +113,11 @@ if (actions.expect?.anyPositiveSunDelta && !state.entities?.effects?.some((effec
 if (actions.expect?.anyNegativeSunDelta && !state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount < 0)) {
   process.exitCode = 1;
 }
+if (actions.expect?.anyZombieVisualAssetIncludes) {
+  const expected = actions.expect.anyZombieVisualAssetIncludes;
+  if (!state.entities?.zombies?.some((zombie) => zombie.visualAsset?.includes(expected))) process.exitCode = 1;
+}
+if (actions.expect?.eatingZombieVisualAssetIncludes) {
+  const expected = actions.expect.eatingZombieVisualAssetIncludes;
+  if (!state.entities?.zombies?.some((zombie) => zombie.eating && zombie.visualAsset?.includes(expected))) process.exitCode = 1;
+}

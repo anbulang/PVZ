@@ -1,4 +1,5 @@
 import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js";
+import { zombieVisualFor } from "./assets.js";
 
 export function createGameState() {
   return {
@@ -71,6 +72,8 @@ export function serializeGameState(state) {
         slowed: zombie.slowTimer > 0,
         eating: Boolean(zombie.eating),
         armorDropped: Boolean(zombie.armorDropped),
+        visualState: zombieVisualFor(zombie).state,
+        visualAsset: zombieVisualFor(zombie).paths[0] ?? null,
       })),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),

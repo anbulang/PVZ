@@ -7,6 +7,7 @@
   ],
   "expect": {
     "anyEating": true,
-    "anyArmorDropped": true
+    "anyArmorDropped": true,
+    "eatingZombieVisualAssetIncludes": "路障僵尸啃食.gif"
   }
 }

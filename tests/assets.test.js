@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { ASSET_PATHS } from "../src/game/assets.js";
+import { ASSET_PATHS, zombieVisualFor } from "../src/game/assets.js";
 import { getAudioAssetPaths } from "../src/game/audio.js";
 
 function assertExists(assetPath) {
@@ -41,4 +41,11 @@ test("zombie walk assets are animated gifs", () => {
 test("background music uses the selected ogg track", () => {
   assert.deepEqual(ASSET_PATHS.music.background, ["assets/音效/ZombiesOnYourLawn.ogg"]);
   assert.equal(getAudioAssetPaths().music.includes("assets/音效/ZombiesOnYourLawn.ogg"), true);
+});
+
+test("zombie visual state selects matching scenario gifs", () => {
+  assert.equal(zombieVisualFor({ type: "basic", eating: false }).paths[0], "assets/图片/僵尸/普通僵尸走路.gif");
+  assert.equal(zombieVisualFor({ type: "basic", eating: true }).paths[0], "assets/图片/僵尸/普通僵尸啃食.gif");
+  assert.equal(zombieVisualFor({ type: "cone", eating: true, armorDropped: true }).paths[0], "assets/图片/僵尸/路障僵尸啃食.gif");
+  assert.equal(zombieVisualFor({ type: "bucket", eating: true, armorDropped: true }).paths[0], "assets/图片/僵尸/铁桶僵尸啃食.gif");
 });

@@ -84,3 +84,13 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 24 tests.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, current sun 125 and positive sun delta verified.
 - Screenshot checked: visible `阳光 125`, field sun `25`, collect `+25`, and status text with current balance.
+
+## 2026-05-05 Zombie Scenario GIF Selection Fix
+
+- Centralized zombie visual selection so `walk` and `eat` states map directly to their scenario GIFs.
+- Fixed armored zombies in eating state to keep their original eating GIF, such as `路障僵尸啃食.gif`, even after armor-drop feedback.
+- Added serialized `visualState` and `visualAsset` fields for browser verification.
+- Added unit and browser assertions for `普通僵尸走路.gif` and `路障僵尸啃食.gif`.
+- Ran `npm test`: PASS, 25 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, walking zombies report `普通僵尸走路.gif`.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating cone zombie reports `路障僵尸啃食.gif`.

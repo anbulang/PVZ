@@ -1,4 +1,4 @@
-import { ASSET_PATHS, drawAsset } from "./assets.js";
+import { ASSET_PATHS, drawAsset, zombieVisualFor } from "./assets.js";
 import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js";
 import { getPlantCardRects, getZombieCardRects } from "./input.js";
 import { cellCenterX, rowCenterY } from "./systems.js";
@@ -345,9 +345,8 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.translate(x, y);
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "runner" ? [108, 118] : type === "imp" ? [68, 78] : [88, 116];
-  const visualType = zombie?.armorDropped && ["cone", "bucket", "runner"].includes(type) ? "basic" : type;
-  const zombiePath = zombie?.eating ? ASSET_PATHS.zombieEat[visualType] : ASSET_PATHS.zombieWalk[visualType];
-  if (drawAsset(ctx, zombiePath, 0, -8, spriteSize[0], spriteSize[1])) {
+  const visual = zombieVisualFor(zombie ?? { type, eating: false, armorDropped: false });
+  if (drawAsset(ctx, visual.paths, 0, -8, spriteSize[0], spriteSize[1])) {
     ctx.restore();
     return;
   }

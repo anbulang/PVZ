@@ -98,3 +98,11 @@ export function drawAsset(ctx, paths, x, y, width, height, options = {}) {
   ctx.restore();
   return true;
 }
+
+export function zombieVisualFor(zombie) {
+  const type = zombie?.type ?? "basic";
+  const state = zombie?.eating ? "eat" : "walk";
+  const visualType = state === "walk" && zombie?.armorDropped && ["cone", "bucket", "runner"].includes(type) ? "basic" : type;
+  const paths = state === "eat" ? ASSET_PATHS.zombieEat[visualType] : ASSET_PATHS.zombieWalk[visualType];
+  return { state, visualType, paths: normalizeAssetList(paths) };
+}
