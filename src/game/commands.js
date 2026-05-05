@@ -63,7 +63,9 @@ function placePlant(state, command) {
     maxHp: config.hp,
     actionClock: 0,
     flash: 0,
+    bitePulse: 0,
   });
+  state.audioEvents.push({ type: "plant" });
   state.status = `${config.name} 已种植。`;
 }
 
@@ -93,6 +95,7 @@ function collectSun(state, command) {
   state.resources.plant.sun += sun.amount;
   state.sunPickups = state.sunPickups.filter((pickup) => pickup.id !== command.id);
   state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, ttl: 0.45 });
+  state.audioEvents.push({ type: "collectSun" });
   state.status = `收集 ${sun.amount} 阳光。`;
 }
 
@@ -116,6 +119,10 @@ export function spawnZombie(state, zombieType, row, options = {}) {
     slowTimer: 0,
     biteClock: 0,
     chargeTimer: config.chargeDuration ?? 0,
+    eating: false,
+    biteSoundClock: 0,
+    armorDropped: false,
     flash: 0,
   });
+  state.audioEvents.push({ type: "zombieSpawn" });
 }

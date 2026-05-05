@@ -21,8 +21,12 @@ for (const step of actions.steps) {
   if (step.buttons?.includes("left_mouse_button")) {
     await page.mouse.click(step.mouse_x, step.mouse_y);
   }
+  if (step.command) {
+    await page.evaluate((command) => window.__enqueueGameCommand?.(command), step.command);
+  }
   const frames = step.frames ?? 1;
-  await page.evaluate((ms) => window.advanceTime?.(ms), frames * (1000 / 60));
+  const ms = step.advanceMs ?? frames * (1000 / 60);
+  await page.evaluate((duration) => window.advanceTime?.(duration), ms);
   await page.waitForTimeout(20);
 }
 
@@ -49,5 +53,11 @@ if (actions.expect?.minWaveCount !== undefined && (state.director?.waveCount ?? 
   process.exitCode = 1;
 }
 if (actions.expect?.minSun !== undefined && (state.resources?.sun ?? 0) < actions.expect.minSun) {
+  process.exitCode = 1;
+}
+if (actions.expect?.anyEating && !state.entities?.zombies?.some((zombie) => zombie.eating)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.anyArmorDropped && !state.entities?.zombies?.some((zombie) => zombie.armorDropped)) {
   process.exitCode = 1;
 }

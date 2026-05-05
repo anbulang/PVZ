@@ -135,6 +135,7 @@ function drawLaneMowers(ctx, state) {
   for (const mower of state.laneMowers) {
     if (!mower.available && !mower.active) continue;
     const y = rowCenterY(mower.row) + 8;
+    if (drawAsset(ctx, ASSET_PATHS.ui.mower, mower.x, y, 74, 58)) continue;
     ctx.save();
     ctx.translate(mower.x, y);
     ctx.fillStyle = mower.active ? "#e24a33" : "#d13b2f";
@@ -184,6 +185,7 @@ function drawPlants(ctx, state) {
   for (const plant of state.plants) {
     drawShadow(ctx, cellCenterX(plant.col), rowCenterY(plant.row) + 36, 54, 12);
     drawPlantIcon(ctx, plant.type, cellCenterX(plant.col), rowCenterY(plant.row), state.time, plant);
+    if (plant.bitePulse > 0) drawBiteMarks(ctx, cellCenterX(plant.col), rowCenterY(plant.row), state.time);
     drawHealth(ctx, cellCenterX(plant.col) - 32, rowCenterY(plant.row) + 34, 64, plant.hp / plant.maxHp, "#3b8f2d");
   }
 }
@@ -192,6 +194,7 @@ function drawZombies(ctx, state) {
   for (const zombie of [...state.zombies].sort((a, b) => a.x - b.x)) {
     drawShadow(ctx, zombie.x, rowCenterY(zombie.row) + 42, 48, 12);
     drawZombieIcon(ctx, zombie.type, zombie.x, rowCenterY(zombie.row), state.time, zombie);
+    if (zombie.armorDropped) drawDroppedArmorAt(ctx, zombie.type, zombie.x - 34, rowCenterY(zombie.row) + 35, state.time);
     drawHealth(ctx, zombie.x - 32, rowCenterY(zombie.row) + 38, 64, zombie.hp / zombie.maxHp, "#8e2f2b");
   }
 }
@@ -213,6 +216,10 @@ function drawEffects(ctx, state) {
   for (const effect of state.effects) {
     const x = effect.x ?? cellCenterX(effect.col);
     const y = effect.y ?? rowCenterY(effect.row);
+    if (effect.type === "armorDrop") {
+      drawArmorDrop(ctx, effect);
+      continue;
+    }
     if (effect.type === "explosion") {
       ctx.globalAlpha = Math.max(0, Math.min(1, effect.ttl / 0.75));
       const radius = 40 + (0.75 - effect.ttl) * 180;
@@ -262,7 +269,12 @@ function drawOverlay(ctx, state) {
 
 function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
   ctx.save();
-  ctx.translate(x, y + Math.sin(time * 4 + x) * 2);
+  const bite = plant?.bitePulse > 0 ? Math.sin(time * 42) * Math.max(0.12, plant.bitePulse) : 0;
+  ctx.translate(x + bite * 24, y + Math.sin(time * 4 + x) * 2);
+  if (plant?.bitePulse > 0) {
+    ctx.scale(1 + plant.bitePulse * 0.55, 1 - plant.bitePulse * 0.38);
+    ctx.rotate(bite * 0.22);
+  }
   if (plant?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "wallnut" ? [84, 96] : [94, 94];
   const sized = type === "cherrybomb" ? [86, 78] : spriteSize;
@@ -280,10 +292,13 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
 
 function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.save();
-  ctx.translate(x, y + Math.sin(time * 6 + x) * 2);
+  const eatBob = zombie?.eating ? Math.sin(time * 28) * 4 : 0;
+  ctx.translate(x + eatBob, y + Math.sin(time * 6 + x) * 2);
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "runner" ? [108, 118] : type === "imp" ? [68, 78] : [88, 116];
-  if (drawAsset(ctx, ASSET_PATHS.zombies[type], 0, -8, spriteSize[0], spriteSize[1])) {
+  const visualType = zombie?.armorDropped && ["cone", "bucket", "runner"].includes(type) ? "basic" : type;
+  const zombiePath = zombie?.eating ? ASSET_PATHS.zombieEating[visualType] : ASSET_PATHS.zombies[visualType];
+  if (drawAsset(ctx, zombiePath, 0, -8, spriteSize[0], spriteSize[1])) {
     ctx.restore();
     return;
   }
@@ -311,6 +326,75 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.arc(-8, -45, 3, 0, Math.PI * 2);
   ctx.arc(8, -45, 3, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawBiteMarks(ctx, x, y, time) {
+  ctx.save();
+  ctx.translate(x + 22 + Math.sin(time * 36) * 4, y - 8);
+  ctx.fillStyle = "rgba(80, 35, 18, 0.65)";
+  for (let i = 0; i < 3; i += 1) {
+    ctx.beginPath();
+    ctx.arc(0, i * 9 - 9, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = "rgba(255, 245, 190, 0.75)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-5, -18);
+  ctx.lineTo(8, 18);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDroppedArmorAt(ctx, type, x, y, time) {
+  ctx.save();
+  ctx.translate(x, y + Math.sin(time * 8 + x) * 1.5);
+  ctx.rotate(-0.25);
+  if (type === "bucket") {
+    ctx.fillStyle = "#aeb7bf";
+    ctx.fillRect(-16, -9, 32, 18);
+    ctx.strokeStyle = "#59646b";
+    ctx.strokeRect(-16, -9, 32, 18);
+  } else if (type === "runner") {
+    ctx.fillStyle = "#cb352e";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 19, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#efefef";
+    ctx.fillRect(-16, -3, 32, 5);
+  } else {
+    ctx.fillStyle = "#dd7b2a";
+    ctx.beginPath();
+    ctx.moveTo(-15, 10);
+    ctx.lineTo(15, 10);
+    ctx.lineTo(0, -20);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawArmorDrop(ctx, effect) {
+  ctx.save();
+  ctx.translate(effect.x, effect.y);
+  ctx.rotate((1.1 - effect.ttl) * 5);
+  const alpha = Math.max(0, Math.min(1, effect.ttl));
+  const path = effect.hatType === "bucket"
+    ? ASSET_PATHS.zombieFeedback.bucketHat
+    : effect.hatType === "runner"
+      ? ASSET_PATHS.zombieFeedback.runnerHelmet
+      : ASSET_PATHS.zombieFeedback.coneHat;
+  if (!drawAsset(ctx, path, 0, 0, effect.hatType === "runner" ? 54 : 44, 42, { alpha })) {
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = effect.hatType === "bucket" ? "#a9b0b7" : effect.hatType === "runner" ? "#d6483b" : "#dd7b2a";
+    ctx.beginPath();
+    ctx.moveTo(-18, 12);
+    ctx.lineTo(18, 12);
+    ctx.lineTo(0, -22);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 

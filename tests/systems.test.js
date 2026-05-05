@@ -36,6 +36,9 @@ test("zombies bite blocking plants", () => {
   const hpBefore = state.plants[0].hp;
   step(state, 5);
   assert.equal(state.plants[0].hp < hpBefore, true);
+  assert.equal(state.zombies[0].eating, true);
+  assert.equal(state.plants[0].bitePulse > 0, true);
+  assert.equal(state.audioEvents.some((event) => event.type === "bite"), true);
 });
 
 test("zombie wins after crossing the left edge", () => {
@@ -85,4 +88,16 @@ test("cherry bomb detonates and clears nearby zombies", () => {
   assert.equal(state.plants.length, 0);
   assert.equal(state.zombies.length, 0);
   assert.equal(state.effects.some((effect) => effect.type === "explosion"), true);
+});
+
+test("armored zombies drop visual feedback when armor breaks", () => {
+  const state = createGameState();
+  state.resources.zombie.brain = 200;
+  applyCommand(state, { type: "deployZombie", zombieType: "cone", row: 0 });
+  state.zombies[0].x = 300;
+  state.projectiles.push({ id: "projectile-test", type: "pea", row: 0, x: 280, y: 200, damage: 180 });
+  step(state, 1 / 60);
+  assert.equal(state.zombies[0].armorDropped, true);
+  assert.equal(state.effects.some((effect) => effect.type === "armorDrop"), true);
+  assert.equal(state.audioEvents.some((event) => event.type === "armorDrop"), true);
 });

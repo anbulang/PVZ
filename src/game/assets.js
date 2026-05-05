@@ -13,12 +13,26 @@ export const ASSET_PATHS = {
     bucket: "assets/僵尸/铁桶僵尸.gif",
     runner: "assets/僵尸/橄榄球僵尸.gif",
   },
+  zombieEating: {
+    basic: "assets/僵尸/普通僵尸啃食.gif",
+    imp: "assets/僵尸/小鬼啃食.gif",
+    cone: "assets/僵尸/路障僵尸啃食.gif",
+    bucket: "assets/僵尸/铁桶僵尸啃食.gif",
+    runner: "assets/僵尸/橄榄球僵尸啃食.gif",
+  },
+  zombieFeedback: {
+    head: "assets/僵尸/头.gif",
+    coneHat: "assets/僵尸/路障僵尸.gif",
+    bucketHat: "assets/僵尸/铁桶僵尸.gif",
+    runnerHelmet: "assets/僵尸/橄榄球僵尸.gif",
+  },
   projectiles: {
     pea: "assets/植物/豆.gif",
     frost: "assets/植物/冰豆.gif",
   },
   ui: {
     sun: "assets/植物大战僵尸素材包第二版/小部分组件/太阳.gif",
+    mower: "assets/植物大战僵尸素材包第二版/小部分组件/小推车.png",
     shovel: "assets/植物大战僵尸素材包第二版/小部分组件/菜单栏/铲子.png",
     shop: "assets/植物大战僵尸素材包第二版/小部分组件/菜单栏/植物商店.png",
   },

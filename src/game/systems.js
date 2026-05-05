@@ -42,6 +42,7 @@ function updateDirector(state, dt) {
     if (state.director.warning.remaining <= 0) {
       const { row, zombieType } = state.director.warning;
       spawnZombie(state, zombieType, row, { x: GRID.deployLeft + 78 });
+      state.audioEvents.push({ type: "zombieSpawn" });
       state.director.warning = null;
       state.director.waveCount += 1;
       state.director.threat = Math.max(0, state.director.threat - 18);
@@ -55,6 +56,7 @@ function updateDirector(state, dt) {
     const row = seededLane(state, state.director.waveCount + 3);
     const zombieType = chooseDirectorZombie(state);
     state.director.warning = { row, zombieType, remaining: ROUND.waveWarning };
+    state.audioEvents.push({ type: "wave" });
     state.director.waveClock = Math.max(8, ROUND.waveEvery - state.director.waveCount * 0.9);
     state.status = `第 ${state.director.waveCount + 1} 波预警：第 ${row + 1} 路有 ${ZOMBIES[zombieType].name}。`;
   }
@@ -99,6 +101,7 @@ function updatePlantActions(state, dt) {
   for (const plant of state.plants) {
     plant.actionClock += dt;
     plant.flash = Math.max(0, plant.flash - dt);
+    plant.bitePulse = Math.max(0, plant.bitePulse - dt);
     const config = PLANTS[plant.type];
     if (config.produceEvery && plant.actionClock >= config.produceEvery) {
       plant.actionClock = 0;
@@ -135,6 +138,7 @@ function explodePlant(state, plant, config) {
     }
   }
   state.effects.push({ id: nextId(state, "effect"), type: "explosion", x, y, ttl: 0.75 });
+  state.audioEvents.push({ type: "explosion" });
   state.status = `${config.name} 爆炸。`;
 }
 
@@ -151,9 +155,11 @@ function updateProjectiles(state, dt) {
     if (hit) {
       hit.hp -= projectile.damage;
       hit.flash = 0.12;
+      maybeDropArmor(state, hit);
       if (projectileConfig.slow > 0) hit.slowTimer = projectileConfig.slowDuration;
       projectile.remove = true;
       state.effects.push({ id: nextId(state, "effect"), type: "hit", x: projectile.x, y: projectile.y, ttl: 0.25 });
+      state.audioEvents.push({ type: "hit" });
     }
     if (projectile.x > GRID.deployLeft + 140) projectile.remove = true;
   }
@@ -163,19 +169,35 @@ function updateProjectiles(state, dt) {
 function updateZombies(state, dt) {
   for (const zombie of state.zombies) {
     const config = ZOMBIES[zombie.type];
+    zombie.eating = false;
     zombie.slowTimer = Math.max(0, zombie.slowTimer - dt);
     zombie.chargeTimer = Math.max(0, (zombie.chargeTimer ?? 0) - dt);
+    zombie.biteSoundClock = Math.max(0, (zombie.biteSoundClock ?? 0) - dt);
     zombie.flash = Math.max(0, zombie.flash - dt);
     const blocker = findBlockingPlant(state, zombie);
     if (blocker) {
+      zombie.eating = true;
       blocker.hp -= config.biteDps * dt;
       blocker.flash = 0.1;
+      blocker.bitePulse = 0.16;
+      if (zombie.biteSoundClock <= 0) {
+        zombie.biteSoundClock = 0.55;
+        state.audioEvents.push({ type: "bite" });
+      }
     } else {
       const slowFactor = zombie.slowTimer > 0 ? 0.55 : 1;
       const chargeFactor = zombie.chargeTimer > 0 ? config.chargeMultiplier ?? 1 : 1;
       zombie.x -= config.speed * slowFactor * chargeFactor * dt;
     }
   }
+}
+
+function maybeDropArmor(state, zombie) {
+  if (zombie.armorDropped || zombie.hp > zombie.maxHp * 0.55) return;
+  if (!["cone", "bucket", "runner"].includes(zombie.type)) return;
+  zombie.armorDropped = true;
+  state.effects.push({ id: nextId(state, "effect"), type: "armorDrop", hatType: zombie.type, x: zombie.x, y: rowCenterY(zombie.row) - 48, vy: -90, vx: -35, ttl: 1.1 });
+  state.audioEvents.push({ type: "armorDrop" });
 }
 
 function updateLaneMowers(state, dt) {
@@ -186,6 +208,7 @@ function updateLaneMowers(state, dt) {
       mower.active = true;
       mower.x = GRID.left - 46;
       state.effects.push({ id: nextId(state, "effect"), type: "mowerStart", x: mower.x, y: rowCenterY(mower.row), ttl: 0.5 });
+      state.audioEvents.push({ type: "mower" });
       state.status = `第 ${mower.row + 1} 路割草机启动。`;
     }
     if (mower.active) {
@@ -211,7 +234,14 @@ function cleanupDeadEntities(state) {
 }
 
 function updateEffects(state, dt) {
-  for (const effect of state.effects) effect.ttl -= dt;
+  for (const effect of state.effects) {
+    effect.ttl -= dt;
+    if (effect.type === "armorDrop") {
+      effect.x += effect.vx * dt;
+      effect.y += effect.vy * dt;
+      effect.vy += 260 * dt;
+    }
+  }
   state.effects = state.effects.filter((effect) => effect.ttl > 0);
 }
 

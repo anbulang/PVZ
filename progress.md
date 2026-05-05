@@ -33,3 +33,16 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 18 tests.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
 - Screenshot checked: expanded cards, collectible sun, mowers, pressure meter, units, projectiles, and status bar visible.
+
+## 2026-05-05 Asset Animation And Audio Iteration
+
+- Replaced hand-drawn lane mowers with the asset pack `小推车.png`.
+- Added procedural Web Audio background music and event sounds for planting, sun collection, zombie spawn, hit, bite, armor drop, explosion, mower, and wave warning.
+- Added zombie eating animation mapping for basic, imp, cone, bucket, and runner zombies.
+- Added plant bite deformation, bite marks, and stronger eaten feedback.
+- Added armor drop state: armored zombies switch to a no-armor body after damage threshold and leave visible dropped armor near their feet.
+- Extended browser verifier to support command-driven scenarios and expectations for eating/armor-drop state.
+- Ran `npm test`: PASS, 19 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS.
+- Screenshot checked: mower asset, eating animation, plant bite deformation, bite marks, and armor drop feedback visible.

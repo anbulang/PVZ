@@ -1,4 +1,5 @@
 import { enqueueCommand } from "./game/commands.js";
+import { processAudioEvents, unlockAudio } from "./game/audio.js";
 import { attachInput } from "./game/input.js";
 import { renderGame } from "./game/render.js";
 import { createGameState, serializeGameState } from "./game/state.js";
@@ -13,6 +14,8 @@ let lastTime = performance.now();
 const fixedDt = 1 / 60;
 
 attachInput(canvas, state);
+canvas.addEventListener("pointerdown", unlockAudio);
+window.addEventListener("keydown", unlockAudio);
 
 function frame(now) {
   const elapsed = Math.min(0.05, (now - lastTime) / 1000);
@@ -20,6 +23,7 @@ function frame(now) {
   accumulator += elapsed;
   while (accumulator >= fixedDt) {
     updateGame(state, fixedDt);
+    processAudioEvents(state.audioEvents);
     accumulator -= fixedDt;
   }
   renderGame(ctx, state);
@@ -32,6 +36,7 @@ window.__enqueueGameCommand = (command) => enqueueCommand(state, command);
 window.advanceTime = (ms) => {
   const steps = Math.max(1, Math.round(ms / (1000 / 60)));
   for (let i = 0; i < steps; i += 1) updateGame(state, fixedDt);
+  processAudioEvents(state.audioEvents);
   renderGame(ctx, state);
 };
 window.render_game_to_text = () => serializeGameState(state);

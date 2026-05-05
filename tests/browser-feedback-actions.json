@@ -1,0 +1,12 @@
+{
+  "steps": [
+    { "command": { "type": "placePlant", "plantType": "peashooter", "row": 2, "col": 5 }, "frames": 2 },
+    { "command": { "type": "placePlant", "plantType": "wallnut", "row": 2, "col": 7 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "cone", "row": 2 }, "frames": 2 },
+    { "buttons": [], "advanceMs": 13000 }
+  ],
+  "expect": {
+    "anyEating": true,
+    "anyArmorDropped": true
+  }
+}

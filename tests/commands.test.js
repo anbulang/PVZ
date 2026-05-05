@@ -59,4 +59,5 @@ test("collecting sun pickup increases plant resources", () => {
   applyCommand(state, { type: "collectSun", id: "sun-test" });
   assert.equal(state.resources.plant.sun, 175);
   assert.equal(state.sunPickups.length, 0);
+  assert.equal(state.audioEvents.some((event) => event.type === "collectSun"), true);
 });

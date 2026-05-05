@@ -20,6 +20,7 @@ export function createGameState() {
     projectiles: [],
     sunPickups: [],
     effects: [],
+    audioEvents: [],
     laneMowers: Array.from({ length: GRID.rows }, (_, row) => ({ row, available: true, active: false, x: GRID.left - 58 })),
     director: {
       waveClock: 6,
@@ -61,7 +62,16 @@ export function serializeGameState(state) {
     status: state.status,
     entities: {
       plants: state.plants.map((plant) => ({ id: plant.id, type: plant.type, row: plant.row, col: plant.col, hp: Math.ceil(plant.hp) })),
-      zombies: state.zombies.map((zombie) => ({ id: zombie.id, type: zombie.type, row: zombie.row, x: Math.round(zombie.x), hp: Math.ceil(zombie.hp), slowed: zombie.slowTimer > 0 })),
+      zombies: state.zombies.map((zombie) => ({
+        id: zombie.id,
+        type: zombie.type,
+        row: zombie.row,
+        x: Math.round(zombie.x),
+        hp: Math.ceil(zombie.hp),
+        slowed: zombie.slowTimer > 0,
+        eating: Boolean(zombie.eating),
+        armorDropped: Boolean(zombie.armorDropped),
+      })),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
       laneMowers: state.laneMowers.map((mower) => ({ row: mower.row, available: mower.available, active: mower.active, x: Math.round(mower.x) })),
