@@ -268,6 +268,20 @@ function drawEffects(ctx, state) {
       ctx.globalAlpha = 1;
       continue;
     }
+    if (effect.type === "damageNumber") {
+      const progress = 1 - effect.ttl / effect.maxTtl;
+      const fill = effect.target === "plant" ? "#ffb0a0" : effect.target === "frost" ? "#bdf2ff" : "#fff1a8";
+      const stroke = effect.target === "plant" ? "#6a1f15" : effect.target === "frost" ? "#14516a" : "#4d3910";
+      drawFloatingValue(ctx, `-${effect.amount}`, x, y - progress * 24, ctx.globalAlpha, fill, stroke, 22);
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    if (effect.type === "defeat") {
+      const progress = 1 - effect.ttl / effect.maxTtl;
+      drawFloatingValue(ctx, "击倒", x, y - progress * 22, ctx.globalAlpha, "#f5e6c8", "#5b1c1c", 22);
+      ctx.globalAlpha = 1;
+      continue;
+    }
     ctx.fillStyle = effect.type === "sunPop" || effect.type === "collectSun" ? "#ffd64d" : effect.type === "mowerStart" ? "#ff5a3d" : "#ffffff";
     ctx.beginPath();
     ctx.arc(x, y - 22, 18 + (1 - effect.ttl) * 10, 0, Math.PI * 2);

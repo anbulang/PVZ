@@ -47,6 +47,7 @@ test("shooters create projectiles that damage zombies", () => {
   step(state, 4);
   assert.equal(state.projectiles.length >= 0, true);
   assert.equal(state.zombies[0].hp < hpBefore, true);
+  assert.equal(state.effects.some((effect) => effect.type === "damageNumber" && effect.target === "zombie" && effect.amount === 24), true);
 });
 
 test("zombies bite blocking plants", () => {
@@ -58,6 +59,7 @@ test("zombies bite blocking plants", () => {
   assert.equal(state.plants[0].hp < hpBefore, true);
   assert.equal(state.zombies[0].eating, true);
   assert.equal(state.plants[0].bitePulse > 0, true);
+  assert.equal(state.effects.some((effect) => effect.type === "damageNumber" && effect.target === "plant"), true);
   assert.equal(state.audioEvents.some((event) => event.type === "bite"), true);
 });
 
@@ -108,6 +110,8 @@ test("cherry bomb detonates and clears nearby zombies", () => {
   assert.equal(state.plants.length, 0);
   assert.equal(state.zombies.length, 0);
   assert.equal(state.effects.some((effect) => effect.type === "explosion"), true);
+  assert.equal(state.effects.some((effect) => effect.type === "damageNumber" && effect.amount === 520), true);
+  assert.equal(state.effects.some((effect) => effect.type === "defeat"), true);
 });
 
 test("armored zombies drop visual feedback when armor breaks", () => {

@@ -94,3 +94,15 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 25 tests.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, walking zombies report `普通僵尸走路.gif`.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating cone zombie reports `路障僵尸啃食.gif`.
+
+## 2026-05-05 Combat Readability Feedback
+
+- Added floating damage numbers for pea hits, frost hits, cherry bomb damage, and zombie bite damage.
+- Added short `击倒` feedback when zombies are defeated.
+- Serialized effect targets so browser tests can distinguish zombie damage from plant damage.
+- Added a dedicated browser hit scenario for projectile damage readability.
+- Ran `npm test`: PASS, 25 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-hit-actions.json`: PASS, zombie damage number captured.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, plant bite damage number and eating GIF captured.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, normal flow unchanged.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun flow unchanged.

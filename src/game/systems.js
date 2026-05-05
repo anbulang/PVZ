@@ -136,6 +136,7 @@ function explodePlant(state, plant, config) {
     if (dx <= config.blastRadius && dy <= GRID.cellHeight * 1.2) {
       zombie.hp -= config.blastDamage;
       zombie.flash = 0.2;
+      pushDamageNumber(state, zombie.x, rowCenterY(zombie.row) - 42, config.blastDamage, "zombie");
     }
   }
   state.effects.push({ id: nextId(state, "effect"), type: "explosion", x, y, ttl: 0.75 });
@@ -160,6 +161,7 @@ function updateProjectiles(state, dt) {
       if (projectileConfig.slow > 0) hit.slowTimer = projectileConfig.slowDuration;
       projectile.remove = true;
       state.effects.push({ id: nextId(state, "effect"), type: "hit", x: projectile.x, y: projectile.y, ttl: 0.25 });
+      pushDamageNumber(state, hit.x, rowCenterY(hit.row) - 46, projectile.damage, projectile.type === "frost" ? "frost" : "zombie");
       state.audioEvents.push({ type: "hit" });
     }
     if (projectile.x > GRID.deployLeft + 140) projectile.remove = true;
@@ -183,6 +185,7 @@ function updateZombies(state, dt) {
       blocker.bitePulse = 0.16;
       if (zombie.biteSoundClock <= 0) {
         zombie.biteSoundClock = 0.55;
+        pushDamageNumber(state, cellCenterX(blocker.col), rowCenterY(blocker.row) - 46, Math.round(config.biteDps * 0.55), "plant");
         state.audioEvents.push({ type: "bite" });
       }
     } else {
@@ -230,8 +233,27 @@ function findBlockingPlant(state, zombie) {
 }
 
 function cleanupDeadEntities(state) {
+  for (const zombie of state.zombies) {
+    if (zombie.hp <= 0 && !zombie.defeatEffectCreated) {
+      zombie.defeatEffectCreated = true;
+      state.effects.push({ id: nextId(state, "effect"), type: "defeat", x: zombie.x, y: rowCenterY(zombie.row) - 24, ttl: 0.7, maxTtl: 0.7 });
+    }
+  }
   state.plants = state.plants.filter((plant) => plant.hp > 0);
   state.zombies = state.zombies.filter((zombie) => zombie.hp > 0);
+}
+
+function pushDamageNumber(state, x, y, amount, target) {
+  state.effects.push({
+    id: nextId(state, "effect"),
+    type: "damageNumber",
+    x,
+    y,
+    amount,
+    target,
+    ttl: 0.75,
+    maxTtl: 0.75,
+  });
 }
 
 function updateEffects(state, dt) {

@@ -8,6 +8,7 @@
   "expect": {
     "anyEating": true,
     "anyArmorDropped": true,
-    "eatingZombieVisualAssetIncludes": "路障僵尸啃食.gif"
+    "eatingZombieVisualAssetIncludes": "路障僵尸啃食.gif",
+    "anyPlantDamageNumber": true
   }
 }
