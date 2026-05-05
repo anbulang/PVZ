@@ -12,6 +12,8 @@
   ],
   "expect": {
     "minWaveCount": 1,
-    "minSun": 25
+    "minSun": 25,
+    "audioUnlocked": true,
+    "musicActive": true
   }
 }

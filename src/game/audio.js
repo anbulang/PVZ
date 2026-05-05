@@ -1,117 +1,120 @@
-const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+import { ASSET_PATHS, normalizeAssetList } from "./assets.js";
 
-let audioContext = null;
-let masterGain = null;
-let musicTimer = null;
-let enabled = false;
+const audioCache = new Map();
+const sfxCursor = new Map();
+const lastPlayedAt = new Map();
+
+let unlocked = false;
+let music = null;
+let musicActive = false;
+let debug = {
+  audioUnlocked: false,
+  musicActive: false,
+  lastSound: null,
+  missing: [],
+};
+
+const SOUND_FOR_EVENT = {
+  plant: "plant",
+  grow: "grow",
+  collectSun: "collectSun",
+  zombieSpawn: "zombieSpawn",
+  bite: "bite",
+  hit: "hit",
+  armorDrop: "armorDrop",
+  explosion: "explosion",
+  mower: "mower",
+  wave: "wave",
+  pause: "pause",
+};
+
+const COOLDOWNS = {
+  bite: 260,
+  hit: 55,
+  zombieSpawn: 180,
+  armorDrop: 100,
+  plant: 80,
+  collectSun: 80,
+};
 
 export function unlockAudio() {
-  if (!AudioContextClass) return;
-  if (!audioContext) {
-    audioContext = new AudioContextClass();
-    masterGain = audioContext.createGain();
-    masterGain.gain.value = 0.18;
-    masterGain.connect(audioContext.destination);
+  unlocked = true;
+  debug.audioUnlocked = true;
+  if (!music) {
+    music = createAudio(ASSET_PATHS.music.background, { loop: true, volume: 0.22 });
   }
-  if (audioContext.state === "suspended") audioContext.resume();
-  if (!enabled) {
-    enabled = true;
-    startMusic();
+  if (music && music.paused) {
+    music.play()
+      .then(() => {
+        musicActive = true;
+        debug.musicActive = true;
+      })
+      .catch(() => {
+        musicActive = false;
+        debug.musicActive = false;
+      });
   }
 }
 
 export function processAudioEvents(events) {
-  if (!enabled || !audioContext) {
+  if (!unlocked) {
     events.length = 0;
     return;
   }
+
   for (const event of events) {
-    if (event.type === "plant") playPluck(340, 0.08);
-    if (event.type === "collectSun") playChime();
-    if (event.type === "zombieSpawn") playThud(95, 0.12);
-    if (event.type === "bite") playBite();
-    if (event.type === "hit") playTick();
-    if (event.type === "armorDrop") playClank();
-    if (event.type === "explosion") playExplosion();
-    if (event.type === "mower") playMower();
-    if (event.type === "wave") playWarning();
+    const key = SOUND_FOR_EVENT[event.type];
+    if (!key) continue;
+    playSound(key);
   }
   events.length = 0;
 }
 
-function startMusic() {
-  if (musicTimer) return;
-  const notes = [196, 247, 262, 294, 247, 220, 196, 165];
-  let index = 0;
-  musicTimer = window.setInterval(() => {
-    if (!enabled || !audioContext) return;
-    const now = audioContext.currentTime;
-    playTone(notes[index % notes.length], now, 0.18, "triangle", 0.035);
-    if (index % 2 === 0) playTone(notes[(index + 2) % notes.length] / 2, now, 0.35, "sine", 0.018);
-    index += 1;
-  }, 420);
+export function getAudioDebugState() {
+  return { ...debug, musicActive };
 }
 
-function playTone(freq, start, duration, type = "sine", gain = 0.05) {
-  const osc = audioContext.createOscillator();
-  const env = audioContext.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, start);
-  env.gain.setValueAtTime(0.0001, start);
-  env.gain.exponentialRampToValueAtTime(gain, start + 0.02);
-  env.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  osc.connect(env).connect(masterGain);
-  osc.start(start);
-  osc.stop(start + duration + 0.03);
+export function getAudioAssetPaths() {
+  return {
+    music: ASSET_PATHS.music.background,
+    sfx: Object.values(ASSET_PATHS.sfx).flatMap((paths) => normalizeAssetList(paths)),
+  };
 }
 
-function playPluck(freq, duration) {
-  const now = audioContext.currentTime;
-  playTone(freq, now, duration, "square", 0.04);
-  playTone(freq * 1.5, now + 0.03, duration * 0.8, "triangle", 0.025);
+function playSound(key) {
+  const now = performance.now();
+  const cooldown = COOLDOWNS[key] ?? 0;
+  if (now - (lastPlayedAt.get(key) ?? 0) < cooldown) return;
+  lastPlayedAt.set(key, now);
+
+  const sound = createAudio(pickSoundPath(key), { loop: false, volume: key === "bite" ? 0.55 : 0.65 });
+  if (!sound) return;
+
+  const instance = sound.cloneNode();
+  instance.volume = sound.volume;
+  instance.play().catch(() => {});
+  debug.lastSound = key;
 }
 
-function playChime() {
-  const now = audioContext.currentTime;
-  playTone(660, now, 0.12, "sine", 0.055);
-  playTone(990, now + 0.08, 0.12, "sine", 0.04);
+function pickSoundPath(key) {
+  const paths = normalizeAssetList(ASSET_PATHS.sfx[key]);
+  const cursor = sfxCursor.get(key) ?? 0;
+  sfxCursor.set(key, cursor + 1);
+  return paths[cursor % paths.length];
 }
 
-function playThud(freq, duration) {
-  const now = audioContext.currentTime;
-  playTone(freq, now, duration, "sawtooth", 0.04);
-}
-
-function playBite() {
-  const now = audioContext.currentTime;
-  playTone(130, now, 0.05, "square", 0.035);
-  playTone(90, now + 0.045, 0.06, "sawtooth", 0.025);
-}
-
-function playTick() {
-  playTone(520, audioContext.currentTime, 0.035, "square", 0.02);
-}
-
-function playClank() {
-  const now = audioContext.currentTime;
-  playTone(780, now, 0.08, "square", 0.035);
-  playTone(360, now + 0.04, 0.12, "triangle", 0.025);
-}
-
-function playExplosion() {
-  const now = audioContext.currentTime;
-  playTone(75, now, 0.32, "sawtooth", 0.075);
-  playTone(120, now + 0.04, 0.22, "square", 0.045);
-}
-
-function playMower() {
-  const now = audioContext.currentTime;
-  playTone(110, now, 0.38, "sawtooth", 0.055);
-  playTone(220, now + 0.05, 0.22, "square", 0.035);
-}
-
-function playWarning() {
-  const now = audioContext.currentTime;
-  playTone(440, now, 0.1, "square", 0.04);
-  playTone(440, now + 0.18, 0.1, "square", 0.04);
+function createAudio(paths, options) {
+  for (const path of normalizeAssetList(paths)) {
+    if (audioCache.has(path)) return audioCache.get(path);
+    const audio = new Audio(encodeURI(path));
+    audio.preload = "auto";
+    audio.loop = Boolean(options.loop);
+    audio.volume = options.volume ?? 0.6;
+    audio.addEventListener("error", () => {
+      if (!debug.missing.includes(path)) debug.missing.push(path);
+    }, { once: true });
+    audioCache.set(path, audio);
+    return audio;
+  }
+  return null;
 }

@@ -1,5 +1,5 @@
 import { enqueueCommand } from "./game/commands.js";
-import { processAudioEvents, unlockAudio } from "./game/audio.js";
+import { getAudioDebugState, processAudioEvents, unlockAudio } from "./game/audio.js";
 import { attachInput } from "./game/input.js";
 import { renderGame } from "./game/render.js";
 import { createGameState, serializeGameState } from "./game/state.js";
@@ -40,6 +40,7 @@ window.advanceTime = (ms) => {
   renderGame(ctx, state);
 };
 window.render_game_to_text = () => serializeGameState(state);
+window.__audioDebug = () => getAudioDebugState();
 
 renderGame(ctx, state);
 requestAnimationFrame(frame);

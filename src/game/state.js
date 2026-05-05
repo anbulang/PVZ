@@ -81,5 +81,6 @@ export function serializeGameState(state) {
       threat: Math.round(state.director.threat),
       warning: state.director.warning,
     },
+    audio: globalThis.__audioDebug ? globalThis.__audioDebug() : { audioUnlocked: false, musicActive: false },
   });
 }

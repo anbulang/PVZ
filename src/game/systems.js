@@ -107,6 +107,7 @@ function updatePlantActions(state, dt) {
       plant.actionClock = 0;
       createSunPickup(state, cellCenterX(plant.col), rowCenterY(plant.row) - 14, config.produceAmount);
       state.effects.push({ id: nextId(state, "effect"), type: "sunPop", row: plant.row, col: plant.col, ttl: 0.8 });
+      state.audioEvents.push({ type: "grow" });
     }
     if (config.explodeAfter && plant.actionClock >= config.explodeAfter) {
       explodePlant(state, plant, config);

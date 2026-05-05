@@ -269,16 +269,16 @@ function drawOverlay(ctx, state) {
 
 function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
   ctx.save();
-  const bite = plant?.bitePulse > 0 ? Math.sin(time * 42) * Math.max(0.12, plant.bitePulse) : 0;
-  ctx.translate(x + bite * 24, y + Math.sin(time * 4 + x) * 2);
+  const bitePulse = plant?.bitePulse ?? 0;
+  ctx.translate(x, y);
   if (plant?.bitePulse > 0) {
-    ctx.scale(1 + plant.bitePulse * 0.55, 1 - plant.bitePulse * 0.38);
-    ctx.rotate(bite * 0.22);
+    ctx.translate(4, 0);
+    ctx.scale(1 + bitePulse * 0.16, 1 - bitePulse * 0.1);
   }
   if (plant?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "wallnut" ? [84, 96] : [94, 94];
   const sized = type === "cherrybomb" ? [86, 78] : spriteSize;
-  if (drawAsset(ctx, ASSET_PATHS.plants[type], 0, 0, sized[0], sized[1])) {
+  if (drawAsset(ctx, ASSET_PATHS.plantIdle[type], 0, 0, sized[0], sized[1])) {
     ctx.restore();
     return;
   }
@@ -292,12 +292,11 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
 
 function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.save();
-  const eatBob = zombie?.eating ? Math.sin(time * 28) * 4 : 0;
-  ctx.translate(x + eatBob, y + Math.sin(time * 6 + x) * 2);
+  ctx.translate(x, y);
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "runner" ? [108, 118] : type === "imp" ? [68, 78] : [88, 116];
   const visualType = zombie?.armorDropped && ["cone", "bucket", "runner"].includes(type) ? "basic" : type;
-  const zombiePath = zombie?.eating ? ASSET_PATHS.zombieEating[visualType] : ASSET_PATHS.zombies[visualType];
+  const zombiePath = zombie?.eating ? ASSET_PATHS.zombieEat[visualType] : ASSET_PATHS.zombieWalk[visualType];
   if (drawAsset(ctx, zombiePath, 0, -8, spriteSize[0], spriteSize[1])) {
     ctx.restore();
     return;
@@ -329,9 +328,9 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.restore();
 }
 
-function drawBiteMarks(ctx, x, y, time) {
+function drawBiteMarks(ctx, x, y) {
   ctx.save();
-  ctx.translate(x + 22 + Math.sin(time * 36) * 4, y - 8);
+  ctx.translate(x + 22, y - 8);
   ctx.fillStyle = "rgba(80, 35, 18, 0.65)";
   for (let i = 0; i < 3; i += 1) {
     ctx.beginPath();
@@ -347,9 +346,9 @@ function drawBiteMarks(ctx, x, y, time) {
   ctx.restore();
 }
 
-function drawDroppedArmorAt(ctx, type, x, y, time) {
+function drawDroppedArmorAt(ctx, type, x, y) {
   ctx.save();
-  ctx.translate(x, y + Math.sin(time * 8 + x) * 1.5);
+  ctx.translate(x, y);
   ctx.rotate(-0.25);
   if (type === "bucket") {
     ctx.fillStyle = "#aeb7bf";

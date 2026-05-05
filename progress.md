@@ -46,3 +46,14 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS.
 - Screenshot checked: mower asset, eating animation, plant bite deformation, bite marks, and armor drop feedback visible.
+
+## 2026-05-05 Real GIF Animation And OGG Audio Fix
+
+- Replaced the previous procedural oscillator audio with real OGG playback from `assets/音效`, including background music, planting, growth, bite, hit, armor, explosion, mower, and wave sounds.
+- Split asset mappings into `plantIdle`, `zombieWalk`, `zombieEat`, `zombieFeedback`, `ui`, `sfx`, and `music`, preferring `assets/图片/...` with compatibility fallbacks.
+- Removed continuous artificial plant/zombie wobble; zombies now switch between walking/eating GIFs through `zombie.eating`, and plants only use a short restrained bite pulse.
+- Added audio debug state to `render_game_to_text` and extended browser verification to fail on missing critical GIF/OGG assets or audio loading errors.
+- Ran `npm test`: PASS, 20 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, with `audioUnlocked: true`, `musicActive: true`, no missing assets, and no console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, with eating and armor-drop state verified.
+- Screenshot checked: mower asset, GIF units, cone zombie eating state, bite marks, and dropped armor are visible without large artificial wobble.
