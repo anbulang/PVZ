@@ -11,6 +11,7 @@
     "minSun": 125,
     "audioUnlocked": true,
     "musicActive": true,
-    "anyCollectSunEffect": true
+    "anyCollectSunEffect": true,
+    "anyPositiveSunDelta": true
   }
 }

@@ -75,3 +75,12 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 
 - Changed background music to `assets/音效/ZombiesOnYourLawn.ogg`.
 - Kept `mainmusic.mo3` out of the browser audio path because HTMLAudio does not natively play MO3 files without an additional decoder or conversion step.
+
+## 2026-05-05 Plant Sun Balance Visibility
+
+- Added a persistent top-layer plant-side sun balance badge so the current sun total is not hidden by seed cards.
+- Added HUD-adjacent `+/-` sun delta feedback for planting costs and sun collection income.
+- Updated plant placement and sun collection status text to include spent/gained sun and current balance.
+- Ran `npm test`: PASS, 24 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, current sun 125 and positive sun delta verified.
+- Screenshot checked: visible `阳光 125`, field sun `25`, collect `+25`, and status text with current balance.

@@ -107,3 +107,9 @@ if (actions.expect?.anyPlantSun && !state.entities?.sunPickups?.some((sun) => su
 if (actions.expect?.anyCollectSunEffect && !state.entities?.effects?.some((effect) => effect.type === "collectSun" && effect.amount > 0)) {
   process.exitCode = 1;
 }
+if (actions.expect?.anyPositiveSunDelta && !state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount > 0)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.anyNegativeSunDelta && !state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount < 0)) {
+  process.exitCode = 1;
+}

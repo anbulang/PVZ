@@ -48,7 +48,6 @@ function drawHud(ctx, state) {
   drawPanel(ctx, 712, 14, 552, 124, "#ded6c9");
   ctx.fillStyle = "#26391f";
   ctx.font = "700 22px system-ui";
-  ctx.fillText(`阳光 ${Math.floor(state.resources.plant.sun)}`, 34, 48);
   ctx.fillText(`脑力 ${Math.floor(state.resources.zombie.brain)}`, 730, 48);
   ctx.textAlign = "center";
   ctx.fillText(`${Math.ceil(state.timer.remaining)} 秒`, 640, 58);
@@ -56,6 +55,23 @@ function drawHud(ctx, state) {
   ctx.textAlign = "left";
   for (const card of getPlantCardRects()) drawCard(ctx, state, card, "plant");
   for (const card of getZombieCardRects()) drawCard(ctx, state, card, "zombie");
+  drawSunCounter(ctx, state);
+}
+
+function drawSunCounter(ctx, state) {
+  const sun = Math.floor(state.resources.plant.sun);
+  ctx.save();
+  drawPanel(ctx, 30, 130, 156, 28, "#fff0a8");
+  if (!drawAsset(ctx, ASSET_PATHS.ui.sun, 48, 144, 30, 30)) {
+    ctx.fillStyle = "#ffd54a";
+    ctx.beginPath();
+    ctx.arc(48, 144, 13, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#20351a";
+  ctx.font = "900 22px system-ui";
+  ctx.fillText(`阳光 ${sun}`, 68, 151);
+  ctx.restore();
 }
 
 function drawCard(ctx, state, card, side) {
@@ -241,6 +257,14 @@ function drawEffects(ctx, state) {
     if (effect.type === "collectSun") {
       const progress = 1 - effect.ttl / effect.maxTtl;
       drawFloatingValue(ctx, `+${effect.amount}`, x, y - 24 - progress * 20, ctx.globalAlpha, "#fff1a8", "#4d3910", 24);
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    if (effect.type === "sunDelta") {
+      const progress = 1 - effect.ttl / effect.maxTtl;
+      const positive = effect.amount > 0;
+      const text = `${positive ? "+" : ""}${effect.amount}`;
+      drawFloatingValue(ctx, text, x + progress * 18, y - progress * 26, ctx.globalAlpha, positive ? "#fff1a8" : "#ffb0a0", positive ? "#4d3910" : "#6a1f15", 24);
       ctx.globalAlpha = 1;
       continue;
     }

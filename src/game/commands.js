@@ -65,8 +65,9 @@ function placePlant(state, command) {
     flash: 0,
     bitePulse: 0,
   });
+  pushSunDeltaEffect(state, -config.cost);
   state.audioEvents.push({ type: "plant" });
-  state.status = `${config.name} 已种植。`;
+  state.status = `${config.name} 已种植，消耗 ${config.cost} 阳光，剩余 ${Math.floor(state.resources.plant.sun)}。`;
 }
 
 function shovelPlant(state, command) {
@@ -95,8 +96,21 @@ function collectSun(state, command) {
   state.resources.plant.sun += sun.amount;
   state.sunPickups = state.sunPickups.filter((pickup) => pickup.id !== command.id);
   state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, amount: sun.amount, ttl: 1.25, maxTtl: 1.25 });
+  pushSunDeltaEffect(state, sun.amount);
   state.audioEvents.push({ type: "collectSun" });
-  state.status = `收集 ${sun.amount} 阳光。`;
+  state.status = `收集 ${sun.amount} 阳光，当前 ${Math.floor(state.resources.plant.sun)}。`;
+}
+
+function pushSunDeltaEffect(state, amount) {
+  state.effects.push({
+    id: nextId(state, "effect"),
+    type: "sunDelta",
+    x: 142,
+    y: 148,
+    amount,
+    ttl: 1.35,
+    maxTtl: 1.35,
+  });
 }
 
 function isGridCell(row, col) {

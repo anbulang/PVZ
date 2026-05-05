@@ -9,6 +9,8 @@ test("plant placement spends sun and occupies a grid cell", () => {
   assert.equal(state.resources.plant.sun, 50);
   assert.equal(state.plants.length, 1);
   assert.equal(state.plants[0].type, "peashooter");
+  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount === -100), true);
+  assert.match(state.status, /消耗 100 阳光，剩余 50/);
   assert.equal(state.cards.plant.peashooter.cooldownRemaining > 0, true);
 });
 
@@ -59,5 +61,7 @@ test("collecting sun pickup increases plant resources", () => {
   applyCommand(state, { type: "collectSun", id: "sun-test" });
   assert.equal(state.resources.plant.sun, 175);
   assert.equal(state.sunPickups.length, 0);
+  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount === 25), true);
+  assert.match(state.status, /当前 175/);
   assert.equal(state.audioEvents.some((event) => event.type === "collectSun"), true);
 });
