@@ -1,246 +1,246 @@
-# PVZ-Inspired Local Versus Design
+# 类 PVZ 本地双人对战设计
 
-## Goal
+## 目标
 
-Build a playable browser-based lane defense game inspired by the structure of Plants vs. Zombies Online Battle: one player controls the plant side and defends the lawn, while the other controls the zombie side and spends resources to break through. The first version is local two-player on one machine, with the game architecture shaped so the same player commands can later come from WebSocket networking.
+做一款可玩的浏览器横向泳道塔防游戏，玩法结构参考 Plants vs. Zombies Online Battle：一名玩家控制植物方防守草坪，另一名玩家控制僵尸方消耗资源突破防线。第一版是同一台机器上的本地双人对战，但架构要保留命令同步边界，后续可以把本地输入替换成 WebSocket 联机输入。
 
-The game must not include, download, generate, or package original Plants vs. Zombies copyrighted assets or game binaries. The implementation will use original Canvas-drawn cartoon assets and keep an `assets/` mapping path available for user-supplied local files.
+游戏不得包含、下载、生成或打包《植物大战僵尸》的原作受版权保护素材或游戏本体文件。第一版使用原创 Canvas 绘制的卡通素材，同时保留 `assets/` 映射路径，方便用户以后自行放入本地素材并替换显示层。
 
-## Scope
+## 范围
 
-First playable version:
+第一版可玩内容：
 
-- 5 lanes by 9 columns battlefield.
-- Plant player can select plant cards, place plants on grid cells, and shovel plants.
-- Zombie player can select zombie cards and deploy zombies from the right side into a lane.
-- Plant side spends sun. Zombie side spends brainpower.
-- Plants attack automatically in their lane.
-- Zombies walk left, bite blocking plants, and win by reaching the left edge.
-- Plants win by surviving the match timer and clearing remaining zombies.
-- Fixed-step deterministic game loop.
-- Unified command queue for plant and zombie actions.
-- `window.advanceTime(ms)` and `window.render_game_to_text()` for automated verification.
+- 5 行 x 9 列战场。
+- 植物方可以选择植物卡牌、在格子里种植植物、用铲子移除植物。
+- 僵尸方可以选择僵尸卡牌，并从右侧向指定行投放僵尸。
+- 植物方消耗阳光，僵尸方消耗脑力。
+- 植物自动攻击同一行内最近的僵尸。
+- 僵尸向左移动，遇到植物后啃咬阻挡植物；僵尸抵达最左侧则获胜。
+- 植物方撑过倒计时，并清理场上剩余僵尸后获胜。
+- 固定步长的确定性游戏循环。
+- 植物方和僵尸方共用统一命令队列。
+- 暴露 `window.advanceTime(ms)` 和 `window.render_game_to_text()`，用于自动化验证。
 
-Out of scope for the first version:
+第一版不做：
 
-- Real network multiplayer.
-- Account system, matchmaking, lobbies, or persistence.
-- Original PVZ assets, executable patching, DLL injection, or reverse-engineered game integration.
-- Full campaign progression.
+- 真实网络多人联机。
+- 账号系统、匹配系统、房间大厅或持久化存档。
+- 原作 PVZ 素材、可执行文件补丁、DLL 注入或逆向集成。
+- 完整冒险模式关卡推进。
 
-## Gameplay
+## 玩法
 
-### Battlefield
+### 战场
 
-The battlefield is a 5 x 9 grid. The plant side occupies cells. Zombies spawn just beyond the right edge of a chosen lane and move left continuously. Grid coordinates use row `0..4` from top to bottom and col `0..8` from left to right.
+战场为 5 x 9 的网格。植物占用网格格子。僵尸从选定行的右侧边界外生成，并连续向左移动。网格坐标使用 `row 0..4` 表示从上到下的行，`col 0..8` 表示从左到右的列。
 
-### Win Conditions
+### 胜负条件
 
-Zombie side wins when any zombie crosses the left edge of the lawn.
+僵尸方胜利：任意僵尸越过草坪最左侧边界。
 
-Plant side wins when the round timer reaches zero and no active zombie remains. The target first-version timer is 180 seconds, tunable in code.
+植物方胜利：回合倒计时归零，并且场上没有存活僵尸。第一版目标时长为 180 秒，代码中可调。
 
-### Resources
+### 资源
 
-Plant side uses sun:
+植物方使用阳光：
 
-- Starts with 150 sun.
-- Gains passive sun drops over time.
-- Gains extra sun from sunflowers.
-- Spending sun places plants.
+- 初始 150 阳光。
+- 随时间获得被动阳光掉落。
+- 向日葵会周期性额外产出阳光。
+- 种植植物会消耗阳光。
 
-Zombie side uses brainpower:
+僵尸方使用脑力：
 
-- Starts with 100 brainpower.
-- Regenerates over time.
-- Regeneration ramps up after the first minute to create late pressure.
-- Spending brainpower deploys zombies.
+- 初始 100 脑力。
+- 随时间自动恢复。
+- 第一分钟后恢复速度提高，制造后期压力。
+- 投放僵尸会消耗脑力。
 
-### Plant Units
+### 植物单位
 
-Sunflower:
+向日葵：
 
-- Cost: 50 sun.
-- Produces sun periodically.
-- Low health.
+- 消耗：50 阳光。
+- 周期性产出阳光。
+- 生命值较低。
 
-Pea Shooter:
+豌豆射手：
 
-- Cost: 100 sun.
-- Fires straight projectiles at the nearest zombie in the same lane.
-- Medium health.
+- 消耗：100 阳光。
+- 向同一行内最近僵尸发射直线弹丸。
+- 生命值中等。
 
-Wall Nut:
+坚果墙：
 
-- Cost: 50 sun.
-- Does not attack.
-- High health and blocks zombies.
+- 消耗：50 阳光。
+- 不攻击。
+- 生命值高，用于阻挡僵尸。
 
-Frost Shooter:
+寒冰射手：
 
-- Cost: 175 sun.
-- Fires lower-damage projectiles that slow zombies for a short duration.
-- Medium health.
+- 消耗：175 阳光。
+- 发射较低伤害的弹丸，并短时间减速僵尸。
+- 生命值中等。
 
-### Zombie Units
+### 僵尸单位
 
-Basic Zombie:
+普通僵尸：
 
-- Cost: 50 brainpower.
-- Standard movement, health, and bite damage.
+- 消耗：50 脑力。
+- 标准移动速度、生命值和啃咬伤害。
 
-Cone Zombie:
+路障僵尸：
 
-- Cost: 100 brainpower.
-- Higher health.
-- Standard movement and bite damage.
+- 消耗：100 脑力。
+- 生命值较高。
+- 标准移动速度和啃咬伤害。
 
-Bucket Zombie:
+铁桶僵尸：
 
-- Cost: 175 brainpower.
-- Very high health.
-- Slower movement.
+- 消耗：175 脑力。
+- 生命值很高。
+- 移动较慢。
 
-Runner Zombie:
+冲刺僵尸：
 
-- Cost: 125 brainpower.
-- Fast movement.
-- Lower health.
+- 消耗：125 脑力。
+- 移动速度快。
+- 生命值较低。
 
-## Controls
+## 操作
 
-The first version uses mouse-first controls:
+第一版以鼠标操作为主：
 
-- Plant player selects a plant card, then clicks an empty grid cell.
-- Plant player selects shovel, then clicks an occupied plant cell to remove it.
-- Zombie player selects a zombie card, then clicks a lane deployment strip on the right side.
-- Clicking a selected card again clears selection.
-- Press `p` to pause or resume.
-- Press `r` after game over to restart.
-- Press `f` to toggle fullscreen.
+- 植物方先选择植物卡牌，再点击空的战场格子进行种植。
+- 植物方选择铲子后，点击已有植物的格子移除植物。
+- 僵尸方先选择僵尸卡牌，再点击右侧投放区域的某一行部署僵尸。
+- 再次点击已选中的卡牌会取消选择。
+- 按 `p` 暂停或继续。
+- 游戏结束后按 `r` 重新开始。
+- 按 `f` 切换全屏。
 
-The UI will display the active selection, resources, cooldowns, remaining time, and winner state.
+界面需要显示当前选择、双方资源、卡牌冷却、剩余时间和胜负状态。
 
-## UI Layout
+## 界面布局
 
-The app is a single-page Canvas game with minimal DOM chrome.
+应用是一个单页 Canvas 游戏，只保留少量 DOM 外壳。
 
-Top bar:
+顶部栏：
 
-- Left group: plant resource and plant cards.
-- Center group: timer and pause state.
-- Right group: zombie resource and zombie cards.
+- 左侧：植物方资源和植物卡牌。
+- 中间：倒计时和暂停状态。
+- 右侧：僵尸方资源和僵尸卡牌。
 
-Main canvas:
+主画布：
 
-- Lawn grid with five visible lanes.
-- Plants, zombies, projectiles, sun pickups, and lane deployment strip.
-- Visual feedback for valid and invalid placement.
+- 5 行草坪战场。
+- 植物、僵尸、弹丸、阳光掉落和右侧投放区域。
+- 合法和非法放置的视觉反馈。
 
-Bottom status:
+底部状态栏：
 
-- Current selected command.
-- Short state messages such as cooldown, insufficient resource, occupied cell, paused, and winner.
+- 当前已选择的命令。
+- 简短状态消息，例如冷却中、资源不足、格子已占用、暂停、胜负结果。
 
-## Visual Direction
+## 视觉方向
 
-Use original polished cartoon Canvas art. The style should be colorful and readable, with richer shapes and animation than the rough brainstorming mockups. It should evoke a bright lane-defense garden game without copying PVZ character silhouettes, sprites, logos, names, or UI art.
+使用原创、精致、可读性高的 Canvas 卡通美术。整体应是明亮的横向花园防守游戏，但不得复制 PVZ 的角色轮廓、精灵图、Logo、命名或 UI 美术。
 
-Implementation priorities:
+实现优先级：
 
-- Distinct silhouettes for each plant and zombie type.
-- Clear team color coding.
-- Small idle animations using scale, bob, and rotation.
-- Damage flashes and projectile impact effects.
-- Readable cards and cooldown overlays.
+- 每种植物和僵尸都要有清晰不同的轮廓。
+- 用颜色明确区分双方阵营。
+- 使用缩放、上下浮动、轻微旋转做小幅待机动画。
+- 提供受击闪烁和弹丸命中特效。
+- 卡牌和冷却遮罩必须清晰可读。
 
-The renderer will first draw assets procedurally on Canvas. It will also centralize sprite lookup so user-supplied local assets can later replace procedural drawings without changing game rules.
+渲染器第一版使用程序化 Canvas 绘制素材。渲染层要集中管理图像查找逻辑，之后用户自行提供本地素材时，可以只替换显示资源而不改游戏规则。
 
-## Architecture
+## 架构
 
-### Modules
+### 模块
 
-`main.js`:
+`main.js`：
 
-- Boots the app.
-- Owns the animation loop.
-- Connects input, state updates, and rendering.
-- Exposes test hooks.
+- 启动应用。
+- 管理动画循环。
+- 连接输入、状态更新和渲染。
+- 暴露测试钩子。
 
-`game/state.js`:
+`game/state.js`：
 
-- Creates and resets game state.
-- Stores plants, zombies, projectiles, resources, cooldowns, timer, selection, and winner.
+- 创建和重置游戏状态。
+- 保存植物、僵尸、弹丸、资源、冷却、倒计时、当前选择和胜负状态。
 
-`game/commands.js`:
+`game/commands.js`：
 
-- Defines command shapes.
-- Validates and applies plant placement, shovel, zombie deployment, pause, and restart commands.
-- Keeps the command boundary reusable for future network input.
+- 定义命令结构。
+- 校验并执行植物种植、铲除、僵尸投放、暂停和重开命令。
+- 保持命令边界可复用，方便以后接入网络输入。
 
-`game/systems.js`:
+`game/systems.js`：
 
-- Advances resources, cooldowns, AI attacks, projectiles, movement, collision, bites, damage, deaths, and win conditions.
+- 推进资源、冷却、自动攻击、弹丸、移动、碰撞、啃咬、伤害、死亡和胜负判断。
 
-`game/render.js`:
+`game/render.js`：
 
-- Draws the battlefield, cards, entities, effects, overlays, and HUD.
+- 绘制战场、卡牌、实体、特效、遮罩和 HUD。
 
-`game/input.js`:
+`game/input.js`：
 
-- Converts mouse and keyboard events into commands.
-- Performs coordinate mapping from screen to logical grid/lane/card regions.
+- 将鼠标和键盘事件转换成命令。
+- 完成屏幕坐标到逻辑网格、行、卡牌区域的映射。
 
-`game/config.js`:
+`game/config.js`：
 
-- Stores unit stats, grid sizing, timing constants, colors, and balance values.
+- 保存单位数值、网格尺寸、时间常量、颜色和基础平衡参数。
 
-### Data Flow
+### 数据流
 
-Input creates commands. Commands enter a queue. On each fixed tick, the game drains pending commands, applies valid state changes, then advances simulation systems. Rendering reads state only and does not mutate game rules.
+输入产生命令。命令进入队列。每个固定 tick 中，游戏先取出并执行待处理命令，再推进模拟系统。渲染只读取状态，不修改游戏规则。
 
-This boundary lets the first version use local mouse and keyboard input while future online mode can feed remote commands into the same queue.
+这个边界让第一版可以使用本地鼠标和键盘输入；未来在线模式可以把远端玩家命令送入同一个命令队列。
 
-## Error Handling
+## 错误处理
 
-Invalid commands do not throw. They set a short user-facing status message and leave state unchanged.
+非法命令不抛异常，只设置简短状态消息并保持状态不变。
 
-Expected invalid cases:
+预期非法情况：
 
-- Not enough resource.
-- Card on cooldown.
-- Plant placement cell is occupied.
-- Shovel target has no plant.
-- Zombie deployment lane is invalid.
-- Actions attempted after game over.
+- 资源不足。
+- 卡牌仍在冷却。
+- 植物放置格子已被占用。
+- 铲子目标格子没有植物。
+- 僵尸投放行无效。
+- 游戏结束后仍尝试操作。
 
-Runtime errors during drawing should be avoided by keeping renderer data access defensive. Test hooks should return valid JSON even when game is paused or over.
+绘制阶段应通过防御性数据访问避免运行时错误。测试钩子在暂停或游戏结束状态下也必须返回合法 JSON。
 
-## Testing And Verification
+## 测试和验证
 
-Use the web game verification loop:
+使用网页游戏验证循环：
 
-- Run the local dev server.
-- Exercise plant placement, zombie deployment, resource spending, cooldowns, combat, pause/resume, restart, and win/loss states.
-- Use `window.advanceTime(ms)` for deterministic stepping.
-- Use `window.render_game_to_text()` to inspect game state.
-- Capture and inspect screenshots after gameplay interactions.
-- Check browser console errors and fix new errors before completion.
+- 启动本地开发服务器。
+- 验证植物种植、僵尸投放、资源消耗、冷却、战斗、暂停/继续、重开和胜负状态。
+- 使用 `window.advanceTime(ms)` 做确定性推进。
+- 使用 `window.render_game_to_text()` 检查游戏状态。
+- 交互后截图并实际检查画面。
+- 检查浏览器 console 错误，先修复新错误再结束。
 
-`render_game_to_text()` must include:
+`render_game_to_text()` 必须包含：
 
-- Mode and pause/game-over state.
-- Coordinate system note.
-- Time remaining.
-- Plant and zombie resources.
-- Active selection.
-- Visible plants, zombies, and projectiles.
-- Winner when present.
+- 模式、暂停状态和游戏结束状态。
+- 坐标系说明。
+- 剩余时间。
+- 植物方和僵尸方资源。
+- 当前选择。
+- 可见植物、僵尸和弹丸。
+- 已出现的胜利方。
 
-## Implementation Constraints
+## 实现约束
 
-- Use plain HTML, CSS, and JavaScript with Vite or a similarly light local dev server.
-- Keep game logic independent from rendering.
-- Avoid large dependencies unless a clear local need appears.
-- Do not bundle copyrighted PVZ assets or executable files.
-- Keep files small enough that each module has a single clear responsibility.
+- 使用纯 HTML、CSS 和 JavaScript，配合 Vite 或类似的轻量本地开发服务器。
+- 游戏逻辑与渲染分离。
+- 除非有明确本地需求，否则避免引入大型依赖。
+- 不打包受版权保护的 PVZ 素材或可执行文件。
+- 保持文件职责单一，避免单个模块过大。
