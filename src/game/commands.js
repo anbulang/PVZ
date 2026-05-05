@@ -34,6 +34,7 @@ export function applyCommand(state, command) {
   if (command.type === "placePlant") return placePlant(state, command);
   if (command.type === "shovel") return shovelPlant(state, command);
   if (command.type === "deployZombie") return deployZombie(state, command);
+  if (command.type === "collectSun") return collectSun(state, command);
   state.status = "未知命令。";
 }
 
@@ -82,18 +83,17 @@ function deployZombie(state, command) {
 
   state.resources.zombie.brain -= config.cost;
   state.cards.zombie[command.zombieType].cooldownRemaining = config.cooldown;
-  state.zombies.push({
-    id: nextId(state, "zombie"),
-    type: command.zombieType,
-    row: command.row,
-    x: GRID.deployLeft + 38,
-    hp: config.hp,
-    maxHp: config.hp,
-    slowTimer: 0,
-    biteClock: 0,
-    flash: 0,
-  });
+  spawnZombie(state, command.zombieType, command.row);
   state.status = `${config.name} 已投放。`;
+}
+
+function collectSun(state, command) {
+  const sun = state.sunPickups.find((pickup) => pickup.id === command.id);
+  if (!sun) return setStatus(state, "阳光已经消失。");
+  state.resources.plant.sun += sun.amount;
+  state.sunPickups = state.sunPickups.filter((pickup) => pickup.id !== command.id);
+  state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, ttl: 0.45 });
+  state.status = `收集 ${sun.amount} 阳光。`;
 }
 
 function isGridCell(row, col) {
@@ -102,4 +102,20 @@ function isGridCell(row, col) {
 
 function setStatus(state, status) {
   state.status = status;
+}
+
+export function spawnZombie(state, zombieType, row, options = {}) {
+  const config = ZOMBIES[zombieType];
+  state.zombies.push({
+    id: nextId(state, "zombie"),
+    type: zombieType,
+    row,
+    x: options.x ?? GRID.deployLeft + 38,
+    hp: config.hp,
+    maxHp: config.hp,
+    slowTimer: 0,
+    biteClock: 0,
+    chargeTimer: config.chargeDuration ?? 0,
+    flash: 0,
+  });
 }

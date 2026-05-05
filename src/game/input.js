@@ -1,4 +1,4 @@
-import { GRID, PLANTS, ZOMBIES } from "./config.js";
+import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js";
 import { enqueueCommand } from "./commands.js";
 
 export function attachInput(canvas, state) {
@@ -16,6 +16,9 @@ export function attachInput(canvas, state) {
 }
 
 export function commandFromPoint(state, point) {
+  const sun = hitSunPickup(state, point);
+  if (sun) return { type: "collectSun", id: sun.id };
+
   const plantCard = hitCard(point, "plant");
   if (plantCard) return toggleSelection(state, { type: "select", side: "plant", kind: plantCard.kind, unitType: plantCard.id });
   const zombieCard = hitCard(point, "zombie");
@@ -33,6 +36,14 @@ export function commandFromPoint(state, point) {
   }
 
   return { type: "clearSelection" };
+}
+
+function hitSunPickup(state, point) {
+  return state.sunPickups.find((sun) => {
+    const dx = sun.x - point.x;
+    const dy = sun.y - point.y;
+    return Math.hypot(dx, dy) <= SUN_PICKUP.radius;
+  });
 }
 
 function toggleSelection(state, command) {
@@ -65,13 +76,13 @@ export function deployLaneFromPoint(point) {
 
 export function getPlantCardRects() {
   const ids = Object.keys(PLANTS);
-  const cards = ids.map((id, index) => ({ id, kind: "plant", x: 22 + index * 92, y: 24, w: 82, h: 104 }));
-  cards.push({ id: "shovel", kind: "shovel", x: 22 + ids.length * 92, y: 24, w: 82, h: 104 });
+  const cards = ids.map((id, index) => ({ id, kind: "plant", x: 22 + index * 86, y: 24, w: 76, h: 104 }));
+  cards.push({ id: "shovel", kind: "shovel", x: 22 + ids.length * 86, y: 24, w: 76, h: 104 });
   return cards;
 }
 
 export function getZombieCardRects() {
-  return Object.keys(ZOMBIES).map((id, index) => ({ id, x: 874 + index * 92, y: 24, w: 82, h: 104 }));
+  return Object.keys(ZOMBIES).map((id, index) => ({ id, x: 842 + index * 84, y: 24, w: 76, h: 104 }));
 }
 
 function hitCard(point, side) {

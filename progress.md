@@ -22,3 +22,14 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Add real WebSocket room transport using the existing command queue.
 - Add optional user-supplied asset manifest under `assets/manifest.json`.
 - Add balance presets for short, normal, and long matches.
+
+## 2026-05-05 Gameplay Polish Iteration
+
+- Added collectible sun pickups for passive sun and sunflower production.
+- Added lane mowers as one-time breakthrough protection per lane.
+- Added director waves with lane warning, automatic pressure spawns, wave count, and threat meter.
+- Added cherry bomb and imp zombie as new tactical units.
+- Improved HUD, card cooldown/resource feedback, lane warning, shadows, mower visuals, sun visuals, and explosion effects.
+- Ran `npm test`: PASS, 18 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
+- Screenshot checked: expanded cards, collectible sun, mowers, pressure meter, units, projectiles, and status bar visible.

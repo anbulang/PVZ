@@ -15,7 +15,7 @@ test("cooldowns and resources advance over time", () => {
   assert.equal(state.cards.plant.sunflower.cooldownRemaining > 0, true);
   step(state, 8.1);
   assert.equal(state.cards.plant.sunflower.cooldownRemaining, 0);
-  assert.equal(state.resources.plant.sun >= 125, true);
+  assert.equal(state.sunPickups.length >= 1, true);
   assert.equal(state.resources.zombie.brain > 100, true);
 });
 
@@ -41,6 +41,7 @@ test("zombies bite blocking plants", () => {
 test("zombie wins after crossing the left edge", () => {
   const state = createGameState();
   applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 0 });
+  state.laneMowers[0].available = false;
   state.zombies[0].x = 10;
   step(state, 1);
   assert.equal(state.winner, "zombie");
@@ -51,4 +52,37 @@ test("plant wins when timer ends and field is clear", () => {
   state.timer.remaining = 0.05;
   step(state, 0.1);
   assert.equal(state.winner, "plant");
+});
+
+test("director warns and then spawns pressure zombies", () => {
+  const state = createGameState();
+  step(state, 6.2);
+  assert.equal(Boolean(state.director.warning), true);
+  step(state, 3.2);
+  assert.equal(state.director.waveCount, 1);
+  assert.equal(state.zombies.length, 1);
+});
+
+test("lane mower clears the first breakthrough in a lane", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  state.zombies[0].x = 70;
+  step(state, 0.3);
+  assert.equal(state.laneMowers[2].available, false);
+  assert.equal(state.laneMowers[2].active, true);
+  step(state, 2);
+  assert.equal(state.zombies.length, 0);
+  assert.equal(state.winner, null);
+});
+
+test("cherry bomb detonates and clears nearby zombies", () => {
+  const state = createGameState();
+  state.resources.plant.sun = 300;
+  applyCommand(state, { type: "placePlant", plantType: "cherrybomb", row: 2, col: 7 });
+  applyCommand(state, { type: "deployZombie", zombieType: "cone", row: 2 });
+  state.zombies[0].x = 900;
+  step(state, 1.2);
+  assert.equal(state.plants.length, 0);
+  assert.equal(state.zombies.length, 0);
+  assert.equal(state.effects.some((effect) => effect.type === "explosion"), true);
 });

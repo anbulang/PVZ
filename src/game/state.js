@@ -18,7 +18,15 @@ export function createGameState() {
     plants: [],
     zombies: [],
     projectiles: [],
+    sunPickups: [],
     effects: [],
+    laneMowers: Array.from({ length: GRID.rows }, (_, row) => ({ row, available: true, active: false, x: GRID.left - 58 })),
+    director: {
+      waveClock: 6,
+      warning: null,
+      waveCount: 0,
+      threat: 0,
+    },
     commandQueue: [],
     nextEntityId: 1,
     status: "植物方选择卡牌种植，僵尸方选择卡牌投放。",
@@ -55,6 +63,13 @@ export function serializeGameState(state) {
       plants: state.plants.map((plant) => ({ id: plant.id, type: plant.type, row: plant.row, col: plant.col, hp: Math.ceil(plant.hp) })),
       zombies: state.zombies.map((zombie) => ({ id: zombie.id, type: zombie.type, row: zombie.row, x: Math.round(zombie.x), hp: Math.ceil(zombie.hp), slowed: zombie.slowTimer > 0 })),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
+      sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
+      laneMowers: state.laneMowers.map((mower) => ({ row: mower.row, available: mower.available, active: mower.active, x: Math.round(mower.x) })),
+    },
+    director: {
+      waveCount: state.director.waveCount,
+      threat: Math.round(state.director.threat),
+      warning: state.director.warning,
     },
   });
 }

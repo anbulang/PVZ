@@ -4,9 +4,11 @@ export const ASSET_PATHS = {
     peashooter: "assets/植物/豌豆射手.gif",
     wallnut: "assets/植物/坚果.gif",
     frostshooter: "assets/植物/寒冰射手.gif",
+    cherrybomb: "assets/植物大战僵尸素材包第二版/植物/樱桃炸弹.gif",
   },
   zombies: {
     basic: "assets/僵尸/普通僵尸走路.gif",
+    imp: "assets/僵尸/小鬼僵尸.gif",
     cone: "assets/僵尸/路障僵尸.gif",
     bucket: "assets/僵尸/铁桶僵尸.gif",
     runner: "assets/僵尸/橄榄球僵尸.gif",
