@@ -121,12 +121,6 @@ if (actions.expect?.eatingZombieVisualAssetIncludes) {
   const expected = actions.expect.eatingZombieVisualAssetIncludes;
   if (!state.entities?.zombies?.some((zombie) => zombie.eating && zombie.visualAsset?.includes(expected))) process.exitCode = 1;
 }
-if (actions.expect?.anyDamageNumber && !state.entities?.effects?.some((effect) => effect.type === "damageNumber")) {
-  process.exitCode = 1;
-}
-if (actions.expect?.anyPlantDamageNumber && !state.entities?.effects?.some((effect) => effect.type === "damageNumber" && effect.target === "plant")) {
-  process.exitCode = 1;
-}
-if (actions.expect?.anyZombieDamageNumber && !state.entities?.effects?.some((effect) => effect.type === "damageNumber" && effect.target === "zombie")) {
+if (actions.expect?.noDamageNumbers && state.entities?.effects?.some((effect) => effect.type === "damageNumber")) {
   process.exitCode = 1;
 }

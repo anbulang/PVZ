@@ -83,7 +83,6 @@ export function serializeGameState(state) {
         x: Math.round(effect.x ?? 0),
         y: Math.round(effect.y ?? 0),
         amount: effect.amount ?? null,
-        target: effect.target ?? null,
       })),
     },
     director: {

@@ -106,3 +106,13 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, plant bite damage number and eating GIF captured.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, normal flow unchanged.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun flow unchanged.
+
+## 2026-05-05 Remove Damage Numbers
+
+- Removed all combat damage number generation and rendering per user request.
+- Kept health bars, hit flashes, bite GIFs, armor drops, and non-numeric `击倒` feedback.
+- Removed the dedicated browser hit-number scenario.
+- Ran `npm test`: PASS, 25 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, no `damageNumber` effects remain.
+- Ran normal and sun browser flows: PASS.
+- Screenshot checked: no `-24` / `-26` damage numbers visible.
