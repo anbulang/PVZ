@@ -37,7 +37,7 @@ export const ASSET_PATHS = {
     shop: ["assets/图片/植物大战僵尸素材包第二版/小部分组件/菜单栏/植物商店.png", "assets/植物大战僵尸素材包第二版/小部分组件/菜单栏/植物商店.png"],
   },
   music: {
-    background: ["assets/音效/rain.ogg", "assets/音效/phonograph.ogg"],
+    background: ["assets/音效/ZombiesOnYourLawn.ogg"],
   },
   sfx: {
     plant: ["assets/音效/plant.ogg", "assets/音效/plant2.ogg"],

@@ -70,3 +70,8 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun resource 125 and active `collectSun` effect amount 25.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating and armor-drop regression still verified.
 - Screenshot checked: sunflower sun value `25`, collection `+25`, walking zombies, and field units are visible.
+
+## 2026-05-05 User-Selected Background Music
+
+- Changed background music to `assets/音效/ZombiesOnYourLawn.ogg`.
+- Kept `mainmusic.mo3` out of the browser audio path because HTMLAudio does not natively play MO3 files without an additional decoder or conversion step.

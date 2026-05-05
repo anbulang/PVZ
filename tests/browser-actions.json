@@ -13,7 +13,6 @@
   "expect": {
     "minWaveCount": 1,
     "audioUnlocked": true,
-    "musicActive": true,
-    "musicPathNotMatching": "ZombiesOnYourLawn|sukhbir"
+    "musicActive": true
   }
 }

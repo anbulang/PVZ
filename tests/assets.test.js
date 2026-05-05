@@ -38,7 +38,7 @@ test("zombie walk assets are animated gifs", () => {
   });
 });
 
-test("background music avoids vocal tracks", () => {
-  assert.deepEqual(ASSET_PATHS.music.background, ["assets/音效/rain.ogg", "assets/音效/phonograph.ogg"]);
-  assert.equal(getAudioAssetPaths().music.some((assetPath) => /ZombiesOnYourLawn|sukhbir/i.test(assetPath)), false);
+test("background music uses the selected ogg track", () => {
+  assert.deepEqual(ASSET_PATHS.music.background, ["assets/音效/ZombiesOnYourLawn.ogg"]);
+  assert.equal(getAudioAssetPaths().music.includes("assets/音效/ZombiesOnYourLawn.ogg"), true);
 });
