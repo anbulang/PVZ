@@ -13,6 +13,9 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Browser state contained 2 plants, 1 zombie, and active projectiles.
 - Console errors: none.
 - Screenshot checked: cards, 5-lane grid, plants, zombie, projectiles, deployment strip, and status bar are visible.
+- Replaced procedural unit/card/projectile rendering with assets loaded from `/assets`.
+- Ran browser verification against `http://localhost:5174` after asset replacement: PASS.
+- Screenshot checked: plant cards, zombie cards, placed plants, deployed zombie, and projectiles use the downloaded asset pack.
 
 ## Next Suggestions
 

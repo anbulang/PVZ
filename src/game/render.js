@@ -1,3 +1,4 @@
+import { ASSET_PATHS, drawAsset } from "./assets.js";
 import { GRID, PLANTS, PROJECTILES, ZOMBIES } from "./config.js";
 import { getPlantCardRects, getZombieCardRects } from "./input.js";
 import { cellCenterX, rowCenterY } from "./systems.js";
@@ -50,9 +51,9 @@ function drawCard(ctx, state, card, side) {
   drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : "#f9f2d0");
   ctx.save();
   ctx.translate(card.x + card.w / 2, card.y + 45);
-  if (side === "plant" && card.id !== "shovel") drawPlantIcon(ctx, card.id, 0, 0, 0);
-  if (side === "zombie") drawZombieIcon(ctx, card.id, 0, 0, 0);
-  if (card.id === "shovel") drawShovel(ctx, 0, 0);
+  if (side === "plant" && card.id !== "shovel") drawPlantIcon(ctx, card.id, 0, 0, 0, null, true);
+  if (side === "zombie") drawZombieIcon(ctx, card.id, 0, 0, 0, null, true);
+  if (card.id === "shovel") drawShovelIcon(ctx, 0, 0, true);
   ctx.restore();
   const config = side === "plant" ? PLANTS[card.id] : ZOMBIES[card.id];
   ctx.fillStyle = "#26391f";
@@ -103,6 +104,7 @@ function drawZombies(ctx, state) {
 function drawProjectiles(ctx, state) {
   for (const projectile of state.projectiles) {
     const config = PROJECTILES[projectile.type];
+    if (drawAsset(ctx, ASSET_PATHS.projectiles[projectile.type], projectile.x, projectile.y - 12, 28, 28)) continue;
     ctx.fillStyle = config.color;
     ctx.beginPath();
     ctx.arc(projectile.x, projectile.y - 12, config.radius, 0, Math.PI * 2);
@@ -151,6 +153,11 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
   ctx.save();
   ctx.translate(x, y + Math.sin(time * 4 + x) * 2);
   if (plant?.flash > 0) ctx.globalAlpha = 0.55;
+  const spriteSize = type === "wallnut" ? [84, 96] : [94, 94];
+  if (drawAsset(ctx, ASSET_PATHS.plants[type], 0, 0, spriteSize[0], spriteSize[1])) {
+    ctx.restore();
+    return;
+  }
   if (type === "sunflower") drawSunflower(ctx);
   if (type === "peashooter") drawPeashooter(ctx, "#65b84d");
   if (type === "wallnut") drawWallnut(ctx);
@@ -162,6 +169,11 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.save();
   ctx.translate(x, y + Math.sin(time * 6 + x) * 2);
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
+  const spriteSize = type === "runner" ? [108, 118] : [88, 116];
+  if (drawAsset(ctx, ASSET_PATHS.zombies[type], 0, -8, spriteSize[0], spriteSize[1])) {
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = type === "runner" ? "#7d9c72" : "#8f987e";
   ctx.fillRect(-18, -30, 36, 58);
   ctx.fillStyle = "#5e6a5a";
@@ -230,6 +242,11 @@ function drawWallnut(ctx) {
   ctx.arc(-9, -8, 3, 0, Math.PI * 2);
   ctx.arc(10, -8, 3, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function drawShovelIcon(ctx, x, y, compact = false) {
+  if (drawAsset(ctx, ASSET_PATHS.ui.shovel, x, y, compact ? 48 : 64, compact ? 48 : 64)) return;
+  drawShovel(ctx, x, y);
 }
 
 function drawShovel(ctx, x, y) {
