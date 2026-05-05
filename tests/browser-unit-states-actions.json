@@ -1,0 +1,14 @@
+{
+  "steps": [
+    { "command": { "type": "placePlant", "plantType": "cherrybomb", "row": 2, "col": 8 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "basic", "row": 2 }, "frames": 2 },
+    { "buttons": [], "advanceMs": 1300 }
+  ],
+  "expect": {
+    "allowNoLiveEntities": true,
+    "sceneAssetIncludes": "白天.jpg",
+    "uiAssetIncludes": "FlagMeterEmpty.png",
+    "anyZombieDeathAssetIncludes": "僵尸死.gif",
+    "noDamageNumbers": true
+  }
+}

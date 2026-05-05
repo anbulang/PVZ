@@ -116,3 +116,16 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, no `damageNumber` effects remain.
 - Ran normal and sun browser flows: PASS.
 - Screenshot checked: no `-24` / `-26` damage numbers visible.
+
+## 2026-05-05 Asset-Driven Foundation Pass
+
+- Added `ASSET_MANIFEST` while keeping `ASSET_PATHS` compatibility, covering scene, UI, plant, zombie, projectile, and audio groupings.
+- Switched the canvas background to the daytime scene asset and made HUD elements use seed/shop, sun counter, shovel slot, and FlagMeter assets where available.
+- Added serialized `visualAssets.scene` and `visualAssets.ui` debug fields so browser verification can prove the canvas is using real asset paths.
+- Replaced zombie defeat text with `zombieDeath` effects that render death GIFs such as `僵尸死.gif`, `小鬼死亡.gif`, and `橄榄球僵尸死.gif`.
+- Added browser scenarios for visual asset wiring and unit death-state GIF verification.
+- Ran `npm test`: PASS, 26 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-assets-actions.json`: PASS, with scene/UI assets, BGM, walking GIF, no missing assets, and no console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-unit-states-actions.json`: PASS, with `zombieDeath` using `僵尸死.gif`.
+- Ran normal, feedback/eating, and sun browser flows: PASS.
+- Screenshot checked: daytime background, asset HUD, sun counter, FlagMeter, mower assets, plant idle motion, and walking zombie GIF are visible without damage numbers.

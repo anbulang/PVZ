@@ -108,7 +108,7 @@ test("cherry bomb detonates and clears nearby zombies", () => {
   assert.equal(state.plants.length, 0);
   assert.equal(state.zombies.length, 0);
   assert.equal(state.effects.some((effect) => effect.type === "explosion"), true);
-  assert.equal(state.effects.some((effect) => effect.type === "defeat"), true);
+  assert.equal(state.effects.some((effect) => effect.type === "zombieDeath" && effect.zombieType === "cone"), true);
 });
 
 test("armored zombies drop visual feedback when armor breaks", () => {

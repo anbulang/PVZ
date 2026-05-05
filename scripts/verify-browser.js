@@ -8,6 +8,13 @@ const url = process.argv[2] ?? "http://localhost:5173";
 const actionsPath = process.argv[3] ?? "tests/browser-actions.json";
 const actions = JSON.parse(fs.readFileSync(actionsPath, "utf8"));
 const requiredAssets = [
+  ASSET_PATHS.scene.day[0],
+  ASSET_PATHS.ui.shop[0],
+  ASSET_PATHS.ui.seedChooser[0],
+  ASSET_PATHS.ui.sunCounter[0],
+  ASSET_PATHS.ui.shovelSlot[0],
+  ASSET_PATHS.ui.flagMeterEmpty[0],
+  ASSET_PATHS.ui.flagMeterFull[0],
   ASSET_PATHS.ui.mower[0],
   ASSET_PATHS.zombieWalk.basic[0],
   ASSET_PATHS.zombieEat.basic[0],
@@ -74,7 +81,7 @@ if (consoleErrors.length > 0) {
 if (missingAssets.length > 0) {
   process.exitCode = 1;
 }
-if ((state.entities?.plants?.length ?? 0) < 1 || (state.entities?.zombies?.length ?? 0) < 1) {
+if (!actions.expect?.allowNoLiveEntities && ((state.entities?.plants?.length ?? 0) < 1 || (state.entities?.zombies?.length ?? 0) < 1)) {
   process.exitCode = 1;
 }
 if (actions.expect?.minWaveCount !== undefined && (state.director?.waveCount ?? 0) < actions.expect.minWaveCount) {
@@ -120,6 +127,18 @@ if (actions.expect?.anyZombieVisualAssetIncludes) {
 if (actions.expect?.eatingZombieVisualAssetIncludes) {
   const expected = actions.expect.eatingZombieVisualAssetIncludes;
   if (!state.entities?.zombies?.some((zombie) => zombie.eating && zombie.visualAsset?.includes(expected))) process.exitCode = 1;
+}
+if (actions.expect?.sceneAssetIncludes && !state.visualAssets?.scene?.includes(actions.expect.sceneAssetIncludes)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.uiAssetIncludes) {
+  const expected = actions.expect.uiAssetIncludes;
+  const uiPaths = Object.values(state.visualAssets?.ui ?? {});
+  if (!uiPaths.some((assetPath) => assetPath?.includes(expected))) process.exitCode = 1;
+}
+if (actions.expect?.anyZombieDeathAssetIncludes) {
+  const expected = actions.expect.anyZombieDeathAssetIncludes;
+  if (!state.entities?.effects?.some((effect) => effect.type === "zombieDeath" && effect.visualAsset?.includes(expected))) process.exitCode = 1;
 }
 if (actions.expect?.noDamageNumbers && state.entities?.effects?.some((effect) => effect.type === "damageNumber")) {
   process.exitCode = 1;

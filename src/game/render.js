@@ -21,6 +21,11 @@ export function renderGame(ctx, state) {
 }
 
 function drawBackground(ctx, width, height) {
+  if (drawAsset(ctx, ASSET_PATHS.scene.day, width / 2, height / 2, width, height)) {
+    ctx.fillStyle = "rgba(255, 244, 168, 0.08)";
+    ctx.fillRect(0, 0, width, height);
+    return;
+  }
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
   gradient.addColorStop(0, "#d7ef94");
   gradient.addColorStop(0.55, "#7fb64f");
@@ -44,8 +49,14 @@ function drawBackground(ctx, width, height) {
 }
 
 function drawHud(ctx, state) {
-  drawPanel(ctx, 16, 14, 552, 124, "#f7e8a6");
-  drawPanel(ctx, 712, 14, 552, 124, "#ded6c9");
+  if (!drawAsset(ctx, ASSET_PATHS.ui.shop, 292, 76, 552, 124)) {
+    drawPanel(ctx, 16, 14, 552, 124, "#f7e8a6");
+  }
+  if (!drawAsset(ctx, ASSET_PATHS.ui.seedChooser, 988, 76, 552, 124)) {
+    drawPanel(ctx, 712, 14, 552, 124, "#ded6c9");
+  }
+  ctx.fillStyle = "rgba(247, 232, 166, 0.78)";
+  ctx.fillRect(712, 14, 552, 124);
   ctx.fillStyle = "#26391f";
   ctx.font = "700 22px system-ui";
   ctx.fillText(`脑力 ${Math.floor(state.resources.zombie.brain)}`, 730, 48);
@@ -61,7 +72,9 @@ function drawHud(ctx, state) {
 function drawSunCounter(ctx, state) {
   const sun = Math.floor(state.resources.plant.sun);
   ctx.save();
-  drawPanel(ctx, 30, 130, 156, 28, "#fff0a8");
+  if (!drawAsset(ctx, ASSET_PATHS.ui.sunCounter, 106, 144, 156, 42)) {
+    drawPanel(ctx, 30, 130, 156, 28, "#fff0a8");
+  }
   if (!drawAsset(ctx, ASSET_PATHS.ui.sun, 48, 144, 30, 30)) {
     ctx.fillStyle = "#ffd54a";
     ctx.beginPath();
@@ -79,7 +92,13 @@ function drawCard(ctx, state, card, side) {
   const config = side === "plant" ? PLANTS[card.id] : ZOMBIES[card.id];
   const resource = side === "plant" ? state.resources.plant.sun : state.resources.zombie.brain;
   const affordable = card.id === "shovel" || resource >= config.cost;
-  drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : affordable ? "#f9f2d0" : "#d2cbb0");
+  if (card.id === "shovel") {
+    if (!drawAsset(ctx, ASSET_PATHS.ui.shovelSlot, card.x + card.w / 2, card.y + card.h / 2, card.w + 12, card.h + 8)) {
+      drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : affordable ? "#f9f2d0" : "#d2cbb0");
+    }
+  } else {
+    drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : affordable ? "#f9f2d0" : "#d2cbb0");
+  }
   ctx.save();
   ctx.translate(card.x + card.w / 2, card.y + 45);
   if (side === "plant" && card.id !== "shovel") drawPlantIcon(ctx, card.id, 0, 0, 0, null, true);
@@ -108,12 +127,26 @@ function drawCard(ctx, state, card, side) {
 
 function drawThreatMeter(ctx, state) {
   const x = 578;
-  const y = 76;
+  const y = 74;
   const w = 124;
-  const h = 16;
+  const h = 20;
+  const ratio = Math.max(0, Math.min(1, state.director.threat / 100));
+  const drewMeter = drawAsset(ctx, ASSET_PATHS.ui.flagMeterEmpty, x + w / 2, y + h / 2, w, 34);
+  if (drewMeter) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y - 6, w * ratio, 34);
+    ctx.clip();
+    drawAsset(ctx, ASSET_PATHS.ui.flagMeterFull, x + w / 2, y + h / 2, w, 34);
+    ctx.restore();
+    drawAsset(ctx, ASSET_PATHS.ui.flagMeterPart1, x + w * ratio, y + h / 2 - 2, 20, 24);
+    ctx.fillStyle = "#26391f";
+    ctx.font = "12px system-ui";
+    ctx.fillText(`压力 ${Math.round(state.director.threat)}`, x + 38, y + 36);
+    return;
+  }
   ctx.fillStyle = "rgba(38,57,31,0.25)";
   ctx.fillRect(x, y, w, h);
-  const ratio = Math.max(0, Math.min(1, state.director.threat / 100));
   const gradient = ctx.createLinearGradient(x, y, x + w, y);
   gradient.addColorStop(0, "#85c64d");
   gradient.addColorStop(0.65, "#e6b94f");
@@ -253,6 +286,16 @@ function drawEffects(ctx, state) {
       ctx.globalAlpha = 1;
       continue;
     }
+    if (effect.type === "zombieDeath") {
+      const progress = 1 - effect.ttl / effect.maxTtl;
+      const size = effect.zombieType === "imp" ? [74, 82] : effect.zombieType === "runner" ? [112, 118] : [96, 118];
+      const paths = ASSET_PATHS.zombieDeath[effect.zombieType] ?? ASSET_PATHS.zombieDeath.basic;
+      if (!drawAsset(ctx, paths, x, y - 8, size[0], size[1], { alpha: Math.max(0, Math.min(1, effect.ttl / effect.maxTtl)) })) {
+        drawFloatingValue(ctx, "击倒", x, y - progress * 22, ctx.globalAlpha, "#f5e6c8", "#5b1c1c", 22);
+      }
+      ctx.globalAlpha = 1;
+      continue;
+    }
     ctx.globalAlpha = Math.max(0, Math.min(1, effect.ttl));
     if (effect.type === "collectSun") {
       const progress = 1 - effect.ttl / effect.maxTtl;
@@ -265,12 +308,6 @@ function drawEffects(ctx, state) {
       const positive = effect.amount > 0;
       const text = `${positive ? "+" : ""}${effect.amount}`;
       drawFloatingValue(ctx, text, x + progress * 18, y - progress * 26, ctx.globalAlpha, positive ? "#fff1a8" : "#ffb0a0", positive ? "#4d3910" : "#6a1f15", 24);
-      ctx.globalAlpha = 1;
-      continue;
-    }
-    if (effect.type === "defeat") {
-      const progress = 1 - effect.ttl / effect.maxTtl;
-      drawFloatingValue(ctx, "击倒", x, y - progress * 22, ctx.globalAlpha, "#f5e6c8", "#5b1c1c", 22);
       ctx.globalAlpha = 1;
       continue;
     }

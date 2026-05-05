@@ -1,5 +1,5 @@
 import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js";
-import { zombieVisualFor } from "./assets.js";
+import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js";
 
 export function createGameState() {
   return {
@@ -83,7 +83,18 @@ export function serializeGameState(state) {
         x: Math.round(effect.x ?? 0),
         y: Math.round(effect.y ?? 0),
         amount: effect.amount ?? null,
+        visualAsset: effect.type === "zombieDeath" ? primaryAssetPath(ASSET_PATHS.zombieDeath[effect.zombieType] ?? ASSET_PATHS.zombieDeath.basic) : null,
       })),
+    },
+    visualAssets: {
+      scene: primaryAssetPath(ASSET_MANIFEST.scene.day.paths),
+      ui: {
+        shop: primaryAssetPath(ASSET_MANIFEST.ui.shop.paths),
+        seedChooser: primaryAssetPath(ASSET_MANIFEST.ui.seedChooser.paths),
+        sunCounter: primaryAssetPath(ASSET_MANIFEST.ui.sunCounter.paths),
+        shovelSlot: primaryAssetPath(ASSET_MANIFEST.ui.shovelSlot.paths),
+        flagMeter: primaryAssetPath(ASSET_MANIFEST.ui.flagMeter.empty.paths),
+      },
     },
     director: {
       waveCount: state.director.waveCount,

@@ -233,7 +233,15 @@ function cleanupDeadEntities(state) {
   for (const zombie of state.zombies) {
     if (zombie.hp <= 0 && !zombie.defeatEffectCreated) {
       zombie.defeatEffectCreated = true;
-      state.effects.push({ id: nextId(state, "effect"), type: "defeat", x: zombie.x, y: rowCenterY(zombie.row) - 24, ttl: 0.7, maxTtl: 0.7 });
+      state.effects.push({
+        id: nextId(state, "effect"),
+        type: "zombieDeath",
+        zombieType: zombie.type,
+        x: zombie.x,
+        y: rowCenterY(zombie.row),
+        ttl: 1.05,
+        maxTtl: 1.05,
+      });
     }
   }
   state.plants = state.plants.filter((plant) => plant.hp > 0);

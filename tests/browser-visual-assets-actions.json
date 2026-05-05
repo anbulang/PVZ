@@ -1,0 +1,17 @@
+{
+  "steps": [
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 68, "mouse_y": 70 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 266, "mouse_y": 374 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 915, "mouse_y": 70 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 1110, "mouse_y": 374 },
+    { "buttons": [], "frames": 180 }
+  ],
+  "expect": {
+    "audioUnlocked": true,
+    "musicActive": true,
+    "sceneAssetIncludes": "白天.jpg",
+    "uiAssetIncludes": "SeedChooser_Background.png",
+    "anyZombieVisualAssetIncludes": "普通僵尸走路.gif",
+    "noDamageNumbers": true
+  }
+}
