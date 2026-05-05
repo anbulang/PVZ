@@ -11,9 +11,9 @@ export function renderGame(ctx, state) {
   drawGrid(ctx);
   drawLaneMowers(ctx, state);
   drawDirectorWarning(ctx, state);
+  drawPlants(ctx, state);
   drawSunPickups(ctx, state);
   drawProjectiles(ctx, state);
-  drawPlants(ctx, state);
   drawZombies(ctx, state);
   drawEffects(ctx, state);
   drawStatus(ctx, state);
@@ -165,19 +165,22 @@ function drawDirectorWarning(ctx, state) {
 function drawSunPickups(ctx, state) {
   for (const sun of state.sunPickups) {
     const pulse = 1 + Math.sin(state.time * 8 + sun.x) * 0.08;
-    if (drawAsset(ctx, ASSET_PATHS.ui.sun, sun.x, sun.y, 52 * pulse, 52 * pulse)) continue;
-    ctx.save();
-    ctx.translate(sun.x, sun.y);
-    ctx.scale(pulse, pulse);
-    ctx.fillStyle = "#ffd54a";
-    for (let i = 0; i < 10; i += 1) {
-      ctx.rotate(Math.PI / 5);
-      ctx.fillRect(-3, -SUN_PICKUP.radius, 6, 14);
+    const drewSunAsset = drawAsset(ctx, ASSET_PATHS.ui.sun, sun.x, sun.y, 52 * pulse, 52 * pulse);
+    if (!drewSunAsset) {
+      ctx.save();
+      ctx.translate(sun.x, sun.y);
+      ctx.scale(pulse, pulse);
+      ctx.fillStyle = "#ffd54a";
+      for (let i = 0; i < 10; i += 1) {
+        ctx.rotate(Math.PI / 5);
+        ctx.fillRect(-3, -SUN_PICKUP.radius, 6, 14);
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
-    ctx.beginPath();
-    ctx.arc(0, 0, 18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    drawFloatingValue(ctx, String(sun.amount), sun.x + 23, sun.y - 18, 1, "#fff6a6", "#6b4b12", 15);
   }
 }
 
@@ -235,6 +238,12 @@ function drawEffects(ctx, state) {
       continue;
     }
     ctx.globalAlpha = Math.max(0, Math.min(1, effect.ttl));
+    if (effect.type === "collectSun") {
+      const progress = 1 - effect.ttl / effect.maxTtl;
+      drawFloatingValue(ctx, `+${effect.amount}`, x, y - 24 - progress * 20, ctx.globalAlpha, "#fff1a8", "#4d3910", 24);
+      ctx.globalAlpha = 1;
+      continue;
+    }
     ctx.fillStyle = effect.type === "sunPop" || effect.type === "collectSun" ? "#ffd64d" : effect.type === "mowerStart" ? "#ff5a3d" : "#ffffff";
     ctx.beginPath();
     ctx.arc(x, y - 22, 18 + (1 - effect.ttl) * 10, 0, Math.PI * 2);
@@ -274,6 +283,10 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
   if (plant?.bitePulse > 0) {
     ctx.translate(4, 0);
     ctx.scale(1 + bitePulse * 0.16, 1 - bitePulse * 0.1);
+  } else if (plant) {
+    const sway = Math.sin(time * 2.6 + plant.col * 0.7 + plant.row * 0.35);
+    ctx.translate(sway * 1, 0);
+    ctx.rotate(sway * 0.012);
   }
   if (plant?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = type === "wallnut" ? [84, 96] : [94, 94];
@@ -287,6 +300,19 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
   if (type === "wallnut") drawWallnut(ctx);
   if (type === "frostshooter") drawPeashooter(ctx, "#72c8d8");
   if (type === "cherrybomb") drawCherryBomb(ctx);
+  ctx.restore();
+}
+
+function drawFloatingValue(ctx, text, x, y, alpha, fill, stroke, size) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `800 ${size}px system-ui`;
+  ctx.textAlign = "center";
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = stroke;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(text, x, y);
   ctx.restore();
 }
 

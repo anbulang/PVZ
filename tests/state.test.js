@@ -23,5 +23,5 @@ test("serializeGameState returns concise JSON for automation", () => {
   assert.deepEqual(payload.resources, { sun: 150, brain: 100 });
   assert.equal(payload.entities.plants.length, 0);
   assert.equal(payload.entities.zombies.length, 0);
-  assert.deepEqual(payload.audio, { audioUnlocked: false, musicActive: false });
+  assert.deepEqual(payload.audio, { audioUnlocked: false, musicActive: false, musicPath: null });
 });

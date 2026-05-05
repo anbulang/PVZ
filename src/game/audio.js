@@ -10,6 +10,7 @@ let musicActive = false;
 let debug = {
   audioUnlocked: false,
   musicActive: false,
+  musicPath: null,
   lastSound: null,
   missing: [],
 };
@@ -41,7 +42,8 @@ export function unlockAudio() {
   unlocked = true;
   debug.audioUnlocked = true;
   if (!music) {
-    music = createAudio(ASSET_PATHS.music.background, { loop: true, volume: 0.22 });
+    music = createAudio(ASSET_PATHS.music.background, { loop: true, volume: 0.16 });
+    debug.musicPath = music?.dataset?.assetPath ?? null;
   }
   if (music && music.paused) {
     music.play()
@@ -53,6 +55,8 @@ export function unlockAudio() {
         musicActive = false;
         debug.musicActive = false;
       });
+    musicActive = !music.paused;
+    debug.musicActive = musicActive;
   }
 }
 
@@ -71,7 +75,8 @@ export function processAudioEvents(events) {
 }
 
 export function getAudioDebugState() {
-  return { ...debug, musicActive };
+  const active = Boolean(music && !music.paused && !music.ended);
+  return { ...debug, musicActive: active || musicActive };
 }
 
 export function getAudioAssetPaths() {
@@ -107,6 +112,7 @@ function createAudio(paths, options) {
   for (const path of normalizeAssetList(paths)) {
     if (audioCache.has(path)) return audioCache.get(path);
     const audio = new Audio(encodeURI(path));
+    audio.dataset.assetPath = path;
     audio.preload = "auto";
     audio.loop = Boolean(options.loop);
     audio.volume = options.volume ?? 0.6;

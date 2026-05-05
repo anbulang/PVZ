@@ -94,7 +94,7 @@ function collectSun(state, command) {
   if (!sun) return setStatus(state, "阳光已经消失。");
   state.resources.plant.sun += sun.amount;
   state.sunPickups = state.sunPickups.filter((pickup) => pickup.id !== command.id);
-  state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, ttl: 0.45 });
+  state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, amount: sun.amount, ttl: 1.25, maxTtl: 1.25 });
   state.audioEvents.push({ type: "collectSun" });
   state.status = `收集 ${sun.amount} 阳光。`;
 }

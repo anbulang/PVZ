@@ -75,12 +75,13 @@ export function serializeGameState(state) {
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
       laneMowers: state.laneMowers.map((mower) => ({ row: mower.row, available: mower.available, active: mower.active, x: Math.round(mower.x) })),
+      effects: state.effects.map((effect) => ({ type: effect.type, x: Math.round(effect.x ?? 0), y: Math.round(effect.y ?? 0), amount: effect.amount ?? null })),
     },
     director: {
       waveCount: state.director.waveCount,
       threat: Math.round(state.director.threat),
       warning: state.director.warning,
     },
-    audio: globalThis.__audioDebug ? globalThis.__audioDebug() : { audioUnlocked: false, musicActive: false },
+    audio: globalThis.__audioDebug ? globalThis.__audioDebug() : { audioUnlocked: false, musicActive: false, musicPath: null },
   });
 }

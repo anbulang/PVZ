@@ -105,7 +105,7 @@ function updatePlantActions(state, dt) {
     const config = PLANTS[plant.type];
     if (config.produceEvery && plant.actionClock >= config.produceEvery) {
       plant.actionClock = 0;
-      createSunPickup(state, cellCenterX(plant.col), rowCenterY(plant.row) - 14, config.produceAmount);
+      createSunPickup(state, cellCenterX(plant.col) + 16, rowCenterY(plant.row) - 56, config.produceAmount);
       state.effects.push({ id: nextId(state, "effect"), type: "sunPop", row: plant.row, col: plant.col, ttl: 0.8 });
       state.audioEvents.push({ type: "grow" });
     }

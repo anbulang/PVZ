@@ -57,3 +57,16 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, with `audioUnlocked: true`, `musicActive: true`, no missing assets, and no console errors.
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, with eating and armor-drop state verified.
 - Screenshot checked: mower asset, GIF units, cone zombie eating state, bite marks, and dropped armor are visible without large artificial wobble.
+
+## 2026-05-05 Sun Feedback And Non-Vocal BGM Fix
+
+- Changed background music from `ZombiesOnYourLawn.ogg` to low-volume `rain.ogg` with `phonograph.ogg` fallback.
+- Moved sun pickup rendering above plants, added visible pickup amounts, and placed sunflower-produced sun above the plant head.
+- Added `+25` collection feedback with amount data in state serialization for browser verification.
+- Restored restrained plant idle sway only for real planted units; card icons stay still and bite compression remains dominant.
+- Added tests for sunflower sun amount, collect feedback amount, non-vocal music mapping, and multi-frame zombie walking GIFs.
+- Ran `npm test`: PASS, 24 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, music path `assets/音效/rain.ogg`, no missing assets or console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun resource 125 and active `collectSun` effect amount 25.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating and armor-drop regression still verified.
+- Screenshot checked: sunflower sun value `25`, collection `+25`, walking zombies, and field units are visible.

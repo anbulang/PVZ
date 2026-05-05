@@ -37,7 +37,14 @@ for (const step of actions.steps) {
     await page.mouse.click(step.mouse_x, step.mouse_y);
   }
   if (step.command) {
-    await page.evaluate((command) => window.__enqueueGameCommand?.(command), step.command);
+    await page.evaluate((command) => {
+      if (command.type === "collectFirstSun") {
+        const sun = window.__gameState?.sunPickups?.find((pickup) => !command.kind || pickup.kind === command.kind);
+        if (sun) window.__enqueueGameCommand?.({ type: "collectSun", id: sun.id });
+        return;
+      }
+      window.__enqueueGameCommand?.(command);
+    }, step.command);
   }
   const frames = step.frames ?? 1;
   const ms = step.advanceMs ?? frames * (1000 / 60);
@@ -89,5 +96,14 @@ if (actions.expect?.musicActive !== undefined && state.audio?.musicActive !== ac
   process.exitCode = 1;
 }
 if ((state.audio?.missing?.length ?? 0) > 0) {
+  process.exitCode = 1;
+}
+if (actions.expect?.musicPathNotMatching && new RegExp(actions.expect.musicPathNotMatching, "i").test(state.audio?.musicPath ?? "")) {
+  process.exitCode = 1;
+}
+if (actions.expect?.anyPlantSun && !state.entities?.sunPickups?.some((sun) => sun.amount > 0)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.anyCollectSunEffect && !state.entities?.effects?.some((effect) => effect.type === "collectSun" && effect.amount > 0)) {
   process.exitCode = 1;
 }

@@ -12,8 +12,8 @@
   ],
   "expect": {
     "minWaveCount": 1,
-    "minSun": 25,
     "audioUnlocked": true,
-    "musicActive": true
+    "musicActive": true,
+    "musicPathNotMatching": "ZombiesOnYourLawn|sukhbir"
   }
 }

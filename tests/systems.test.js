@@ -19,6 +19,26 @@ test("cooldowns and resources advance over time", () => {
   assert.equal(state.resources.zombie.brain > 100, true);
 });
 
+test("sunflowers produce visible sun pickups with amounts", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
+  step(state, 8.1);
+  const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
+  assert.equal(Boolean(producedSun), true);
+  assert.equal(producedSun.amount, 25);
+  assert.equal(producedSun.y < 360, true);
+});
+
+test("collecting sun creates amount feedback", () => {
+  const state = createGameState();
+  state.sunPickups.push({ id: "sun-test", x: 200, y: 200, amount: 25, ttl: 10 });
+  applyCommand(state, { type: "collectSun", id: "sun-test" });
+  const feedback = state.effects.find((effect) => effect.type === "collectSun");
+  assert.equal(state.resources.plant.sun, 175);
+  assert.equal(feedback.amount, 25);
+  assert.equal(feedback.maxTtl, 1.25);
+});
+
 test("shooters create projectiles that damage zombies", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "peashooter", row: 2, col: 0 });
