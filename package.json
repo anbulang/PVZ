@@ -1,0 +1,13 @@
+{
+  "name": "pvz-local-versus",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "serve": "python3 -m http.server 5173"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
+  }
+}
