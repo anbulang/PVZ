@@ -1,0 +1,14 @@
+{
+  "steps": [
+    { "command": { "type": "setResources", "sun": 500, "brain": 500 }, "frames": 1 },
+    { "command": { "type": "placePlant", "plantType": "jalapeno", "row": 1, "col": 4 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "bucket", "row": 1 }, "frames": 2 },
+    { "buttons": [], "advanceMs": 850 }
+  ],
+  "expect": {
+    "allowNoLiveEntities": true,
+    "sceneAssetIncludes": "白天.jpg",
+    "anyEffectType": "rowFire",
+    "noDamageNumbers": true
+  }
+}

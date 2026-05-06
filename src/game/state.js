@@ -62,7 +62,16 @@ export function serializeGameState(state) {
     selection: state.selection,
     status: state.status,
     entities: {
-      plants: state.plants.map((plant) => ({ id: plant.id, type: plant.type, row: plant.row, col: plant.col, hp: Math.ceil(plant.hp) })),
+      plants: state.plants.map((plant) => ({
+        id: plant.id,
+        type: plant.type,
+        row: plant.row,
+        col: plant.col,
+        hp: Math.ceil(plant.hp),
+        armed: Boolean(plant.armed),
+        visualState: plant.armed ? "armed" : "idle",
+        visualAsset: primaryAssetPath(plant.armed && ASSET_PATHS.plantArmed[plant.type] ? ASSET_PATHS.plantArmed[plant.type] : ASSET_PATHS.plantIdle[plant.type]),
+      })),
       zombies: state.zombies.map((zombie) => ({
         id: zombie.id,
         type: zombie.type,

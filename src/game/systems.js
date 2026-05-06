@@ -103,6 +103,20 @@ function updatePlantActions(state, dt) {
     plant.flash = Math.max(0, plant.flash - dt);
     plant.bitePulse = Math.max(0, plant.bitePulse - dt);
     const config = PLANTS[plant.type];
+    if (config.armTime && !plant.armed && plant.actionClock >= config.armTime) {
+      plant.armed = true;
+      plant.actionClock = 0;
+      plant.flash = 0.18;
+      state.status = `${config.name} 已准备。`;
+    }
+    if (config.armTime && plant.armed) {
+      const target = state.zombies.find((zombie) => zombie.row === plant.row && Math.abs(zombie.x - cellCenterX(plant.col)) < 46);
+      if (target) {
+        explodePlant(state, plant, config, "potatoMine");
+        plant.hp = 0;
+        continue;
+      }
+    }
     if (config.produceEvery && plant.actionClock >= config.produceEvery) {
       plant.actionClock = 0;
       createSunPickup(state, cellCenterX(plant.col) + 16, rowCenterY(plant.row) - 56, config.produceAmount);
@@ -110,36 +124,42 @@ function updatePlantActions(state, dt) {
       state.audioEvents.push({ type: "grow" });
     }
     if (config.explodeAfter && plant.actionClock >= config.explodeAfter) {
-      explodePlant(state, plant, config);
+      explodePlant(state, plant, config, config.rowBlast ? "jalapeno" : "explosion");
       plant.hp = 0;
     }
     if (config.fireEvery && plant.actionClock >= config.fireEvery && hasZombieAhead(state, plant)) {
       plant.actionClock = 0;
-      state.projectiles.push({
-        id: nextId(state, "projectile"),
-        type: config.projectile,
-        row: plant.row,
-        x: cellCenterX(plant.col) + 24,
-        y: rowCenterY(plant.row),
-        damage: config.damage,
-      });
+      const burstCount = config.burstCount ?? 1;
+      for (let index = 0; index < burstCount; index += 1) {
+        state.projectiles.push({
+          id: nextId(state, "projectile"),
+          type: config.projectile,
+          row: plant.row,
+          x: cellCenterX(plant.col) + 24 - index * 18,
+          y: rowCenterY(plant.row) + index * 2,
+          damage: config.damage,
+          torchwoodIds: [],
+        });
+      }
     }
   }
 }
 
-function explodePlant(state, plant, config) {
+function explodePlant(state, plant, config, soundType = "explosion") {
   const x = cellCenterX(plant.col);
   const y = rowCenterY(plant.row);
   for (const zombie of state.zombies) {
     const dy = Math.abs(rowCenterY(zombie.row) - y);
     const dx = Math.abs(zombie.x - x);
-    if (dx <= config.blastRadius && dy <= GRID.cellHeight * 1.2) {
+    const inBlast = config.rowBlast ? zombie.row === plant.row : dx <= config.blastRadius && dy <= GRID.cellHeight * 1.2;
+    if (inBlast) {
       zombie.hp -= config.blastDamage;
       zombie.flash = 0.2;
     }
   }
-  state.effects.push({ id: nextId(state, "effect"), type: "explosion", x, y, ttl: 0.75 });
-  state.audioEvents.push({ type: "explosion" });
+  const ttl = config.rowBlast ? 1.45 : 0.75;
+  state.effects.push({ id: nextId(state, "effect"), type: config.rowBlast ? "rowFire" : "explosion", row: plant.row, x, y, ttl, maxTtl: ttl });
+  state.audioEvents.push({ type: soundType });
   state.status = `${config.name} 爆炸。`;
 }
 
@@ -152,6 +172,7 @@ function updateProjectiles(state, dt) {
   for (const projectile of state.projectiles) {
     const projectileConfig = PROJECTILES[projectile.type];
     projectile.x += projectileConfig.speed * dt;
+    maybeIgniteProjectile(state, projectile);
     const hit = state.zombies.find((zombie) => zombie.row === projectile.row && Math.abs(zombie.x - projectile.x) < 26);
     if (hit) {
       hit.hp -= projectile.damage;
@@ -165,6 +186,21 @@ function updateProjectiles(state, dt) {
     if (projectile.x > GRID.deployLeft + 140) projectile.remove = true;
   }
   state.projectiles = state.projectiles.filter((projectile) => !projectile.remove);
+}
+
+function maybeIgniteProjectile(state, projectile) {
+  if (projectile.type !== "pea") return;
+  const torchwood = state.plants.find((plant) => {
+    if (plant.row !== projectile.row || plant.type !== "torchwood") return false;
+    if (projectile.torchwoodIds?.includes(plant.id)) return false;
+    return Math.abs(projectile.x - cellCenterX(plant.col)) < 24;
+  });
+  if (!torchwood) return;
+  projectile.type = "firepea";
+  projectile.damage = Math.ceil(projectile.damage * 1.55);
+  projectile.torchwoodIds = [...(projectile.torchwoodIds ?? []), torchwood.id];
+  state.effects.push({ id: nextId(state, "effect"), type: "ignite", x: projectile.x, y: projectile.y, ttl: 0.22 });
+  state.audioEvents.push({ type: "ignite" });
 }
 
 function updateZombies(state, dt) {
@@ -181,6 +217,12 @@ function updateZombies(state, dt) {
       blocker.hp -= config.biteDps * dt;
       blocker.flash = 0.1;
       blocker.bitePulse = 0.16;
+      if (config.crushPlant) {
+        blocker.hp = 0;
+        zombie.eating = false;
+        state.effects.push({ id: nextId(state, "effect"), type: "mowerStart", x: cellCenterX(blocker.col), y: rowCenterY(blocker.row), ttl: 0.35 });
+        state.audioEvents.push({ type: "zamboni" });
+      }
       if (zombie.biteSoundClock <= 0) {
         zombie.biteSoundClock = 0.55;
         state.audioEvents.push({ type: "bite" });
@@ -195,7 +237,7 @@ function updateZombies(state, dt) {
 
 function maybeDropArmor(state, zombie) {
   if (zombie.armorDropped || zombie.hp > zombie.maxHp * 0.55) return;
-  if (!["cone", "bucket", "runner"].includes(zombie.type)) return;
+  if (!["cone", "bucket", "screen", "runner"].includes(zombie.type)) return;
   zombie.armorDropped = true;
   state.effects.push({ id: nextId(state, "effect"), type: "armorDrop", hatType: zombie.type, x: zombie.x, y: rowCenterY(zombie.row) - 48, vy: -90, vx: -35, ttl: 1.1 });
   state.audioEvents.push({ type: "armorDrop" });

@@ -24,9 +24,13 @@ const SOUND_FOR_EVENT = {
   hit: "hit",
   armorDrop: "armorDrop",
   explosion: "explosion",
+  potatoMine: "potatoMine",
+  ignite: "ignite",
+  jalapeno: "jalapeno",
   mower: "mower",
   wave: "wave",
   pause: "pause",
+  zamboni: "zamboni",
 };
 
 const COOLDOWNS = {
@@ -36,6 +40,10 @@ const COOLDOWNS = {
   armorDrop: 100,
   plant: 80,
   collectSun: 80,
+  potatoMine: 160,
+  ignite: 80,
+  zamboni: 350,
+  jalapeno: 180,
 };
 
 export function unlockAudio() {

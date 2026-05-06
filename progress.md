@@ -129,3 +129,17 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-unit-states-actions.json`: PASS, with `zombieDeath` using `僵尸死.gif`.
 - Ran normal, feedback/eating, and sun browser flows: PASS.
 - Screenshot checked: daytime background, asset HUD, sun counter, FlagMeter, mower assets, plant idle motion, and walking zombie GIF are visible without damage numbers.
+
+## 2026-05-07 Expanded Unit And Special State Pass
+
+- Converted plant and zombie card rails to compact two-row layouts so more units fit without leaving the canvas.
+- Added new plants with distinct roles: `repeater` burst damage, `twinSunflower` economy, `torchwood` pea-to-firepea upgrade, `potatoMine` arming/trap burst, and `jalapeno` lane clear.
+- Added new zombies with distinct pressure patterns: `flag` faster pressure, `screen` shielded armor target, and `zamboni` vehicle crush behavior.
+- Wired corresponding assets for new plants, zombies, fire peas, potato mine armed state, iron-door bite/walk GIFs, zamboni GIF, and jalapeno/ignite/potato/zamboni sound events.
+- Added `plant.visualState` and `plant.visualAsset` serialization for browser verification.
+- Added `rowFire` lane-clearing visual feedback and made it visible in screenshots.
+- Added browser scenarios for expanded units and special plants.
+- Ran `npm test`: PASS, 32 tests.
+- Ran browser verification for normal, sun, feedback/eating, expanded-unit, visual-asset, unit-death, and special-plant scenarios: PASS with no missing assets or console errors.
+- Ran the `develop-web-game` Playwright client against the expanded-unit scenario after linking the project `node_modules` into the skill script folder.
+- Screenshot checked: compact cards, torchwood, armed potato mine, fire peas, iron-door zombie, zamboni, and jalapeno row fire are visible.

@@ -1,0 +1,18 @@
+{
+  "steps": [
+    { "command": { "type": "setResources", "sun": 700, "brain": 500 }, "frames": 1 },
+    { "command": { "type": "placePlant", "plantType": "repeater", "row": 2, "col": 0 }, "frames": 2 },
+    { "command": { "type": "placePlant", "plantType": "torchwood", "row": 2, "col": 2 }, "frames": 2 },
+    { "command": { "type": "placePlant", "plantType": "potatoMine", "row": 3, "col": 5 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "screen", "row": 2 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "zamboni", "row": 3 }, "frames": 2 },
+    { "buttons": [], "advanceMs": 6500 }
+  ],
+  "expect": {
+    "sceneAssetIncludes": "白天.jpg",
+    "anyZombieVisualAssetIncludes": "铁门僵尸",
+    "anyPlantVisualAssetIncludes": "土豆地雷.gif",
+    "anyProjectileType": "firepea",
+    "noDamageNumbers": true
+  }
+}

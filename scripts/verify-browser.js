@@ -50,6 +50,11 @@ for (const step of actions.steps) {
         if (sun) window.__enqueueGameCommand?.({ type: "collectSun", id: sun.id });
         return;
       }
+      if (command.type === "setResources") {
+        if (command.sun !== undefined) window.__gameState.resources.plant.sun = command.sun;
+        if (command.brain !== undefined) window.__gameState.resources.zombie.brain = command.brain;
+        return;
+      }
       window.__enqueueGameCommand?.(command);
     }, step.command);
   }
@@ -123,6 +128,18 @@ if (actions.expect?.anyNegativeSunDelta && !state.entities?.effects?.some((effec
 if (actions.expect?.anyZombieVisualAssetIncludes) {
   const expected = actions.expect.anyZombieVisualAssetIncludes;
   if (!state.entities?.zombies?.some((zombie) => zombie.visualAsset?.includes(expected))) process.exitCode = 1;
+}
+if (actions.expect?.anyPlantVisualAssetIncludes) {
+  const expected = actions.expect.anyPlantVisualAssetIncludes;
+  if (!state.entities?.plants?.some((plant) => plant.visualAsset?.includes(expected))) process.exitCode = 1;
+}
+if (actions.expect?.anyProjectileType) {
+  const expected = actions.expect.anyProjectileType;
+  if (!state.entities?.projectiles?.some((projectile) => projectile.type === expected)) process.exitCode = 1;
+}
+if (actions.expect?.anyEffectType) {
+  const expected = actions.expect.anyEffectType;
+  if (!state.entities?.effects?.some((effect) => effect.type === expected)) process.exitCode = 1;
 }
 if (actions.expect?.eatingZombieVisualAssetIncludes) {
   const expected = actions.expect.eatingZombieVisualAssetIncludes;

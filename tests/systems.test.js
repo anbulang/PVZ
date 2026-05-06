@@ -29,6 +29,16 @@ test("sunflowers produce visible sun pickups with amounts", () => {
   assert.equal(producedSun.y < 360, true);
 });
 
+test("twin sunflowers produce larger sun pickups", () => {
+  const state = createGameState();
+  state.resources.plant.sun = 250;
+  applyCommand(state, { type: "placePlant", plantType: "twinSunflower", row: 2, col: 2 });
+  step(state, 8.7);
+  const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
+  assert.equal(Boolean(producedSun), true);
+  assert.equal(producedSun.amount, 50);
+});
+
 test("collecting sun creates amount feedback", () => {
   const state = createGameState();
   state.sunPickups.push({ id: "sun-test", x: 200, y: 200, amount: 25, ttl: 10 });
@@ -47,6 +57,42 @@ test("shooters create projectiles that damage zombies", () => {
   step(state, 4);
   assert.equal(state.projectiles.length >= 0, true);
   assert.equal(state.zombies[0].hp < hpBefore, true);
+});
+
+test("repeaters fire burst projectiles", () => {
+  const state = createGameState();
+  state.resources.plant.sun = 300;
+  applyCommand(state, { type: "placePlant", plantType: "repeater", row: 2, col: 0 });
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  step(state, 1.7);
+  assert.equal(state.projectiles.length >= 2, true);
+});
+
+test("torchwood upgrades pea projectiles into fire peas", () => {
+  const state = createGameState();
+  state.resources.plant.sun = 400;
+  state.resources.zombie.brain = 250;
+  applyCommand(state, { type: "placePlant", plantType: "peashooter", row: 2, col: 0 });
+  applyCommand(state, { type: "placePlant", plantType: "torchwood", row: 2, col: 2 });
+  applyCommand(state, { type: "deployZombie", zombieType: "bucket", row: 2 });
+  step(state, 2.2);
+  assert.equal(state.projectiles.some((projectile) => projectile.type === "firepea"), true);
+  assert.equal(state.audioEvents.some((event) => event.type === "ignite"), true);
+});
+
+test("potato mines arm before exploding on contact", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "potatoMine", row: 2, col: 5 });
+  assert.equal(state.plants[0].armed, false);
+  step(state, 5.7);
+  assert.equal(state.plants[0].armed, true);
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  state.zombies[0].x = 680;
+  step(state, 0.2);
+  assert.equal(state.plants.length, 0);
+  assert.equal(state.zombies.length, 0);
+  assert.equal(state.effects.some((effect) => effect.type === "explosion"), true);
+  assert.equal(state.audioEvents.some((event) => event.type === "potatoMine"), true);
 });
 
 test("zombies bite blocking plants", () => {
@@ -111,6 +157,20 @@ test("cherry bomb detonates and clears nearby zombies", () => {
   assert.equal(state.effects.some((effect) => effect.type === "zombieDeath" && effect.zombieType === "cone"), true);
 });
 
+test("jalapeno clears its entire lane", () => {
+  const state = createGameState();
+  state.resources.plant.sun = 300;
+  state.resources.zombie.brain = 400;
+  applyCommand(state, { type: "placePlant", plantType: "jalapeno", row: 1, col: 4 });
+  applyCommand(state, { type: "deployZombie", zombieType: "bucket", row: 1 });
+  applyCommand(state, { type: "deployZombie", zombieType: "cone", row: 2 });
+  step(state, 0.9);
+  assert.equal(state.zombies.some((zombie) => zombie.row === 1), false);
+  assert.equal(state.zombies.some((zombie) => zombie.row === 2), true);
+  assert.equal(state.effects.some((effect) => effect.type === "rowFire"), true);
+  assert.equal(state.audioEvents.some((event) => event.type === "jalapeno"), true);
+});
+
 test("armored zombies drop visual feedback when armor breaks", () => {
   const state = createGameState();
   state.resources.zombie.brain = 200;
@@ -121,4 +181,15 @@ test("armored zombies drop visual feedback when armor breaks", () => {
   assert.equal(state.zombies[0].armorDropped, true);
   assert.equal(state.effects.some((effect) => effect.type === "armorDrop"), true);
   assert.equal(state.audioEvents.some((event) => event.type === "armorDrop"), true);
+});
+
+test("zamboni crushes plants instead of pausing to eat", () => {
+  const state = createGameState();
+  state.resources.zombie.brain = 300;
+  applyCommand(state, { type: "placePlant", plantType: "wallnut", row: 1, col: 8 });
+  applyCommand(state, { type: "deployZombie", zombieType: "zamboni", row: 1 });
+  step(state, 5.5);
+  assert.equal(state.plants.length, 0);
+  assert.equal(state.zombies[0].eating, false);
+  assert.equal(state.audioEvents.some((event) => event.type === "zamboni"), true);
 });

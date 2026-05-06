@@ -62,6 +62,7 @@ function placePlant(state, command) {
     hp: config.hp,
     maxHp: config.hp,
     actionClock: 0,
+    armed: !config.armTime,
     flash: 0,
     bitePulse: 0,
   });
@@ -87,6 +88,7 @@ function deployZombie(state, command) {
   state.resources.zombie.brain -= config.cost;
   state.cards.zombie[command.zombieType].cooldownRemaining = config.cooldown;
   spawnZombie(state, command.zombieType, command.row);
+  if (command.zombieType === "zamboni") state.audioEvents.push({ type: "zamboni" });
   state.status = `${config.name} 已投放。`;
 }
 

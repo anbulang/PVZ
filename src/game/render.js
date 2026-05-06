@@ -92,6 +92,7 @@ function drawCard(ctx, state, card, side) {
   const config = side === "plant" ? PLANTS[card.id] : ZOMBIES[card.id];
   const resource = side === "plant" ? state.resources.plant.sun : state.resources.zombie.brain;
   const affordable = card.id === "shovel" || resource >= config.cost;
+  const compact = card.h < 80;
   if (card.id === "shovel") {
     if (!drawAsset(ctx, ASSET_PATHS.ui.shovelSlot, card.x + card.w / 2, card.y + card.h / 2, card.w + 12, card.h + 8)) {
       drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : affordable ? "#f9f2d0" : "#d2cbb0");
@@ -100,24 +101,27 @@ function drawCard(ctx, state, card, side) {
     drawPanel(ctx, card.x, card.y, card.w, card.h, selected ? "#fff0a8" : affordable ? "#f9f2d0" : "#d2cbb0");
   }
   ctx.save();
-  ctx.translate(card.x + card.w / 2, card.y + 45);
+  ctx.translate(card.x + card.w / 2, card.y + (compact ? 24 : 45));
+  if (compact) ctx.scale(0.52, 0.52);
   if (side === "plant" && card.id !== "shovel") drawPlantIcon(ctx, card.id, 0, 0, 0, null, true);
   if (side === "zombie") drawZombieIcon(ctx, card.id, 0, 0, 0, null, true);
   if (card.id === "shovel") drawShovelIcon(ctx, 0, 0, true);
   ctx.restore();
   ctx.fillStyle = "#26391f";
-  ctx.font = "12px system-ui";
+  ctx.font = compact ? "10px system-ui" : "12px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText(card.id === "shovel" ? "铲子" : config.name, card.x + card.w / 2, card.y + 84);
-  ctx.fillText(card.id === "shovel" ? "移除" : String(config.cost), card.x + card.w / 2, card.y + 101);
+  ctx.fillText(card.id === "shovel" ? "铲子" : config.name, card.x + card.w / 2, card.y + (compact ? 41 : 84));
+  ctx.fillText(card.id === "shovel" ? "移除" : String(config.cost), card.x + card.w / 2, card.y + (compact ? 52 : 101));
   ctx.textAlign = "left";
   const cooldown = card.id === "shovel" ? 0 : state.cards[side][card.id].cooldownRemaining;
   if (cooldown > 0) {
     ctx.fillStyle = "rgba(0,0,0,0.45)";
     ctx.fillRect(card.x, card.y, card.w, card.h * Math.min(1, cooldown / config.cooldown));
     ctx.fillStyle = "#fff7c2";
-    ctx.font = "700 18px system-ui";
-    ctx.fillText(cooldown.toFixed(1), card.x + card.w / 2, card.y + 56);
+    ctx.font = compact ? "700 12px system-ui" : "700 18px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(cooldown.toFixed(1), card.x + card.w / 2, card.y + (compact ? 29 : 56));
+    ctx.textAlign = "left";
   }
   if (!affordable) {
     ctx.fillStyle = "rgba(90,60,40,0.35)";
@@ -206,6 +210,8 @@ function drawDirectorWarning(ctx, state) {
   const y = GRID.top + warning.row * GRID.cellHeight;
   ctx.fillStyle = `rgba(216, 67, 42, ${0.18 + Math.sin(state.time * 10) * 0.08})`;
   ctx.fillRect(GRID.left, y, GRID.deployLeft - GRID.left + 132, GRID.cellHeight);
+  const waveAsset = state.timer.remaining < 35 ? ASSET_PATHS.ui.finalWave : ASSET_PATHS.ui.largeWave;
+  drawAsset(ctx, waveAsset, 640, GRID.top + GRID.rows * GRID.cellHeight + 12, 260, 72, { alpha: Math.min(1, warning.remaining / 1.5) });
   ctx.fillStyle = "#fff0a8";
   ctx.font = "800 18px system-ui";
   ctx.fillText(`第 ${warning.row + 1} 路预警 ${warning.remaining.toFixed(1)}s`, GRID.deployLeft - 190, y + 28);
@@ -286,6 +292,30 @@ function drawEffects(ctx, state) {
       ctx.globalAlpha = 1;
       continue;
     }
+    if (effect.type === "rowFire") {
+      const alpha = Math.max(0.55, Math.min(1, effect.ttl / effect.maxTtl));
+      ctx.globalAlpha = alpha;
+      const rowY = rowCenterY(effect.row);
+      ctx.fillStyle = "rgba(255, 98, 22, 0.38)";
+      ctx.fillRect(GRID.left, rowY - 30, GRID.deployLeft - GRID.left + 132, 60);
+      const gradient = ctx.createLinearGradient(GRID.left, rowY, GRID.deployLeft + 132, rowY);
+      gradient.addColorStop(0, "rgba(255, 226, 84, 0)");
+      gradient.addColorStop(0.2, "#ffde54");
+      gradient.addColorStop(0.5, "#ff6a1a");
+      gradient.addColorStop(0.8, "#ffde54");
+      gradient.addColorStop(1, "rgba(255, 226, 84, 0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(GRID.left, rowY - 22, GRID.deployLeft - GRID.left + 132, 44);
+      ctx.fillStyle = "rgba(255, 244, 126, 0.86)";
+      for (let i = 0; i < 18; i += 1) {
+        const flameX = GRID.left + i * 58 + ((effect.maxTtl - effect.ttl) * 90) % 42;
+        ctx.beginPath();
+        ctx.ellipse(flameX, rowY + Math.sin(i) * 6, 18, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      continue;
+    }
     if (effect.type === "zombieDeath") {
       const progress = 1 - effect.ttl / effect.maxTtl;
       const size = effect.zombieType === "imp" ? [74, 82] : effect.zombieType === "runner" ? [112, 118] : [96, 118];
@@ -297,6 +327,15 @@ function drawEffects(ctx, state) {
       continue;
     }
     ctx.globalAlpha = Math.max(0, Math.min(1, effect.ttl));
+    if (effect.type === "ignite") {
+      const radius = 10 + (1 - effect.ttl / 0.22) * 18;
+      ctx.fillStyle = `rgba(255, 122, 40, ${ctx.globalAlpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y - 12, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      continue;
+    }
     if (effect.type === "collectSun") {
       const progress = 1 - effect.ttl / effect.maxTtl;
       drawFloatingValue(ctx, `+${effect.amount}`, x, y - 24 - progress * 20, ctx.globalAlpha, "#fff1a8", "#4d3910", 24);
@@ -356,18 +395,33 @@ function drawPlantIcon(ctx, type, x, y, time = 0, plant = null) {
     ctx.rotate(sway * 0.012);
   }
   if (plant?.flash > 0) ctx.globalAlpha = 0.55;
-  const spriteSize = type === "wallnut" ? [84, 96] : [94, 94];
+  const spriteSize = plantSpriteSize(type);
   const sized = type === "cherrybomb" ? [86, 78] : spriteSize;
-  if (drawAsset(ctx, ASSET_PATHS.plantIdle[type], 0, 0, sized[0], sized[1])) {
+  const paths = plant?.armed && ASSET_PATHS.plantArmed[type] ? ASSET_PATHS.plantArmed[type] : ASSET_PATHS.plantIdle[type];
+  if (drawAsset(ctx, paths, 0, 0, sized[0], sized[1])) {
     ctx.restore();
     return;
   }
   if (type === "sunflower") drawSunflower(ctx);
   if (type === "peashooter") drawPeashooter(ctx, "#65b84d");
+  if (type === "repeater") drawPeashooter(ctx, "#4ca43d");
   if (type === "wallnut") drawWallnut(ctx);
   if (type === "frostshooter") drawPeashooter(ctx, "#72c8d8");
+  if (type === "twinSunflower") drawSunflower(ctx);
+  if (type === "torchwood") drawTorchwood(ctx);
+  if (type === "potatoMine") drawPotatoMine(ctx, Boolean(plant?.armed));
+  if (type === "jalapeno") drawJalapeno(ctx);
   if (type === "cherrybomb") drawCherryBomb(ctx);
   ctx.restore();
+}
+
+function plantSpriteSize(type) {
+  if (type === "wallnut") return [84, 96];
+  if (type === "torchwood") return [82, 92];
+  if (type === "potatoMine") return [76, 64];
+  if (type === "jalapeno") return [88, 88];
+  if (type === "twinSunflower") return [104, 94];
+  return [94, 94];
 }
 
 function drawFloatingValue(ctx, text, x, y, alpha, fill, stroke, size) {
@@ -387,7 +441,7 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.save();
   ctx.translate(x, y);
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
-  const spriteSize = type === "runner" ? [108, 118] : type === "imp" ? [68, 78] : [88, 116];
+  const spriteSize = zombieSpriteSize(type);
   const visual = zombieVisualFor(zombie ?? { type, eating: false, armorDropped: false });
   if (drawAsset(ctx, visual.paths, 0, -8, spriteSize[0], spriteSize[1])) {
     ctx.restore();
@@ -420,6 +474,15 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   ctx.restore();
 }
 
+function zombieSpriteSize(type) {
+  if (type === "runner") return [108, 118];
+  if (type === "imp") return [68, 78];
+  if (type === "zamboni") return [122, 96];
+  if (type === "screen") return [96, 118];
+  if (type === "flag") return [96, 118];
+  return [88, 116];
+}
+
 function drawBiteMarks(ctx, x, y) {
   ctx.save();
   ctx.translate(x + 22, y - 8);
@@ -447,6 +510,11 @@ function drawDroppedArmorAt(ctx, type, x, y) {
     ctx.fillRect(-16, -9, 32, 18);
     ctx.strokeStyle = "#59646b";
     ctx.strokeRect(-16, -9, 32, 18);
+  } else if (type === "screen") {
+    ctx.fillStyle = "#aeb7bf";
+    ctx.fillRect(-17, -22, 34, 44);
+    ctx.strokeStyle = "#59646b";
+    ctx.strokeRect(-17, -22, 34, 44);
   } else if (type === "runner") {
     ctx.fillStyle = "#cb352e";
     ctx.beginPath();
@@ -473,12 +541,14 @@ function drawArmorDrop(ctx, effect) {
   const alpha = Math.max(0, Math.min(1, effect.ttl));
   const path = effect.hatType === "bucket"
     ? ASSET_PATHS.zombieFeedback.bucketHat
+    : effect.hatType === "screen"
+      ? ASSET_PATHS.zombieFeedback.screenDoor
     : effect.hatType === "runner"
       ? ASSET_PATHS.zombieFeedback.runnerHelmet
       : ASSET_PATHS.zombieFeedback.coneHat;
   if (!drawAsset(ctx, path, 0, 0, effect.hatType === "runner" ? 54 : 44, 42, { alpha })) {
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = effect.hatType === "bucket" ? "#a9b0b7" : effect.hatType === "runner" ? "#d6483b" : "#dd7b2a";
+    ctx.fillStyle = effect.hatType === "bucket" || effect.hatType === "screen" ? "#a9b0b7" : effect.hatType === "runner" ? "#d6483b" : "#dd7b2a";
     ctx.beginPath();
     ctx.moveTo(-18, 12);
     ctx.lineTo(18, 12);
@@ -517,6 +587,28 @@ function drawPeashooter(ctx, color) {
   ctx.fill();
 }
 
+function drawTorchwood(ctx) {
+  ctx.fillStyle = "#8b4a25";
+  ctx.fillRect(-22, -30, 44, 58);
+  ctx.fillStyle = "#ff8a2a";
+  ctx.beginPath();
+  ctx.arc(0, -34, 17, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawPotatoMine(ctx, armed) {
+  ctx.fillStyle = armed ? "#a86a35" : "#6d4b2c";
+  ctx.beginPath();
+  ctx.ellipse(0, armed ? 5 : 18, armed ? 25 : 20, armed ? 21 : 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (!armed) return;
+  ctx.fillStyle = "#2c2118";
+  ctx.beginPath();
+  ctx.arc(-7, 0, 3, 0, Math.PI * 2);
+  ctx.arc(8, 0, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawWallnut(ctx) {
   ctx.fillStyle = "#b8874b";
   ctx.beginPath();
@@ -544,6 +636,20 @@ function drawCherryBomb(ctx) {
   ctx.beginPath();
   ctx.arc(-19, -2, 3, 0, Math.PI * 2);
   ctx.arc(7, -2, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawJalapeno(ctx) {
+  ctx.fillStyle = "#d93422";
+  ctx.beginPath();
+  ctx.ellipse(0, 6, 18, 38, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2d8a35";
+  ctx.fillRect(-5, -36, 10, 18);
+  ctx.fillStyle = "#fff4b8";
+  ctx.beginPath();
+  ctx.arc(-6, -4, 3, 0, Math.PI * 2);
+  ctx.arc(7, -5, 3, 0, Math.PI * 2);
   ctx.fill();
 }
 

@@ -76,13 +76,22 @@ export function deployLaneFromPoint(point) {
 
 export function getPlantCardRects() {
   const ids = Object.keys(PLANTS);
-  const cards = ids.map((id, index) => ({ id, kind: "plant", x: 22 + index * 86, y: 24, w: 76, h: 104 }));
-  cards.push({ id: "shovel", kind: "shovel", x: 22 + ids.length * 86, y: 24, w: 76, h: 104 });
+  const cards = ids.map((id, index) => {
+    const col = index % 6;
+    const row = Math.floor(index / 6);
+    return { id, kind: "plant", x: 22 + col * 76, y: 20 + row * 58, w: 68, h: 54 };
+  });
+  const shovelIndex = ids.length;
+  cards.push({ id: "shovel", kind: "shovel", x: 22 + (shovelIndex % 6) * 76, y: 20 + Math.floor(shovelIndex / 6) * 58, w: 68, h: 54 });
   return cards;
 }
 
 export function getZombieCardRects() {
-  return Object.keys(ZOMBIES).map((id, index) => ({ id, x: 842 + index * 84, y: 24, w: 76, h: 104 }));
+  return Object.keys(ZOMBIES).map((id, index) => {
+    const col = index % 6;
+    const row = Math.floor(index / 6);
+    return { id, x: 842 + col * 68, y: 20 + row * 58, w: 62, h: 54 };
+  });
 }
 
 function hitCard(point, side) {

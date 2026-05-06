@@ -9,39 +9,61 @@ export const ASSET_PATHS = {
   plantIdle: {
     sunflower: ["assets/图片/植物/向日葵.gif", "assets/植物/向日葵.gif"],
     peashooter: ["assets/图片/植物/豌豆射手.gif", "assets/植物/豌豆射手.gif"],
+    repeater: ["assets/图片/植物/双重射手.gif"],
     wallnut: ["assets/图片/植物/坚果.gif", "assets/植物/坚果.gif"],
     frostshooter: ["assets/图片/植物/寒冰射手.gif", "assets/植物/寒冰射手.gif"],
+    twinSunflower: ["assets/图片/植物/双胞向日葵.gif"],
+    torchwood: ["assets/图片/植物/火炬树桩.gif"],
+    potatoMine: ["assets/图片/植物/在地下.gif", "assets/图片/植物/土豆地雷.gif"],
+    jalapeno: ["assets/图片/植物/火爆辣椒·.gif"],
     cherrybomb: ["assets/图片/植物大战僵尸素材包第二版/植物/樱桃炸弹.gif", "assets/植物大战僵尸素材包第二版/植物/樱桃炸弹.gif"],
+  },
+  plantArmed: {
+    potatoMine: ["assets/图片/植物/土豆地雷.gif"],
+  },
+  plantDeath: {
+    potatoMine: ["assets/图片/植物/土豆泥.gif"],
   },
   zombieWalk: {
     basic: ["assets/图片/僵尸/普通僵尸走路.gif", "assets/僵尸/普通僵尸走路.gif"],
     imp: ["assets/图片/僵尸/小鬼僵尸.gif", "assets/僵尸/小鬼僵尸.gif"],
+    flag: ["assets/图片/僵尸/旗帜僵尸.gif"],
     cone: ["assets/图片/僵尸/路障僵尸.gif", "assets/僵尸/路障僵尸.gif"],
+    screen: ["assets/图片/僵尸/铁门僵尸.gif"],
     bucket: ["assets/图片/僵尸/铁桶僵尸.gif", "assets/僵尸/铁桶僵尸.gif"],
+    zamboni: ["assets/图片/僵尸/冰车僵尸.gif"],
     runner: ["assets/图片/僵尸/橄榄球僵尸.gif", "assets/僵尸/橄榄球僵尸.gif"],
   },
   zombieEat: {
     basic: ["assets/图片/僵尸/普通僵尸啃食.gif", "assets/僵尸/普通僵尸啃食.gif"],
     imp: ["assets/图片/僵尸/小鬼啃食.gif", "assets/僵尸/小鬼啃食.gif"],
+    flag: ["assets/图片/僵尸/旗帜僵尸啃食.gif"],
     cone: ["assets/图片/僵尸/路障僵尸啃食.gif", "assets/僵尸/路障僵尸啃食.gif"],
+    screen: ["assets/图片/僵尸/铁门僵尸啃食.gif"],
     bucket: ["assets/图片/僵尸/铁桶僵尸啃食.gif", "assets/僵尸/铁桶僵尸啃食.gif"],
+    zamboni: ["assets/图片/僵尸/冰车僵尸.gif"],
     runner: ["assets/图片/僵尸/橄榄球僵尸啃食.gif", "assets/僵尸/橄榄球僵尸啃食.gif"],
   },
   zombieDeath: {
     basic: ["assets/图片/僵尸/僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/僵尸死.gif"],
     imp: ["assets/图片/僵尸/小鬼死亡.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/小鬼僵尸/小鬼死亡.gif"],
+    flag: ["assets/图片/僵尸/僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/僵尸死.gif"],
     cone: ["assets/图片/僵尸/僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/僵尸死.gif"],
+    screen: ["assets/图片/僵尸/僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/僵尸死.gif"],
     bucket: ["assets/图片/僵尸/僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/僵尸死.gif"],
+    zamboni: ["assets/图片/僵尸/爆炸！（小丑僵尸）.gif", "assets/图片/僵尸/僵尸死.gif"],
     runner: ["assets/图片/僵尸/橄榄球僵尸死.gif", "assets/图片/植物大战僵尸素材包第二版/僵尸/橄榄球僵尸/橄榄球僵尸死.gif"],
   },
   zombieFeedback: {
     head: ["assets/图片/僵尸/头.gif", "assets/僵尸/头.gif"],
     coneHat: ["assets/图片/僵尸/路障僵尸.gif", "assets/僵尸/路障僵尸.gif"],
     bucketHat: ["assets/图片/僵尸/铁桶僵尸.gif", "assets/僵尸/铁桶僵尸.gif"],
+    screenDoor: ["assets/图片/僵尸/铁门僵尸.gif"],
     runnerHelmet: ["assets/图片/僵尸/橄榄球僵尸.gif", "assets/僵尸/橄榄球僵尸.gif"],
   },
   projectiles: {
     pea: ["assets/图片/植物/豆.gif", "assets/植物/豆.gif"],
+    firepea: ["assets/图片/植物/火豆.gif"],
     frost: ["assets/图片/植物/冰豆.gif", "assets/植物/冰豆.gif"],
   },
   ui: {
@@ -76,6 +98,10 @@ export const ASSET_PATHS = {
     mower: ["assets/音效/lawnmower.ogg"],
     wave: ["assets/音效/awooga.ogg", "assets/音效/hugewave.ogg"],
     pause: ["assets/音效/pause.ogg"],
+    potatoMine: ["assets/音效/potato_mine.ogg"],
+    ignite: ["assets/音效/ignite.ogg", "assets/音效/firepea.ogg"],
+    zamboni: ["assets/音效/zamboni.ogg"],
+    jalapeno: ["assets/音效/jalapeno.ogg"],
   },
 };
 
@@ -87,8 +113,9 @@ export const ASSET_MANIFEST = {
     type,
     {
       idle: { paths },
+      armed: { paths: ASSET_PATHS.plantArmed[type] ?? paths },
       damaged: { paths },
-      death: { paths },
+      death: { paths: ASSET_PATHS.plantDeath[type] ?? paths },
       sfx: {},
     },
   ])),
@@ -171,7 +198,7 @@ export function primaryAssetPath(paths) {
 export function zombieVisualFor(zombie) {
   const type = zombie?.type ?? "basic";
   const state = zombie?.eating ? "eat" : "walk";
-  const visualType = state === "walk" && zombie?.armorDropped && ["cone", "bucket", "runner"].includes(type) ? "basic" : type;
+  const visualType = state === "walk" && zombie?.armorDropped && ["cone", "bucket", "screen", "runner"].includes(type) ? "basic" : type;
   const paths = state === "eat" ? ASSET_PATHS.zombieEat[visualType] : ASSET_PATHS.zombieWalk[visualType];
   return { state, visualType, paths: normalizeAssetList(paths) };
 }
