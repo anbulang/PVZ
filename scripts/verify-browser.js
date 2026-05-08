@@ -68,6 +68,10 @@ await page.waitForTimeout(500);
 const stateText = await page.evaluate(() => window.render_game_to_text?.() ?? "{}");
 const state = JSON.parse(stateText);
 const audioDebug = await page.evaluate(() => window.__audioDebug?.() ?? null);
+let gifFrameDiff = null;
+if (actions.expect?.gifFramePixelDiff) {
+  gifFrameDiff = await measureGifFrameDiff(page, actions.expect.gifFramePixelDiff);
+}
 const screenshotPath = "test-results/local-versus-game.png";
 await page.locator("#game").screenshot({ path: screenshotPath });
 await browser.close();
@@ -77,6 +81,7 @@ console.log(JSON.stringify({
   consoleErrors,
   missingAssets,
   audioDebug,
+  gifFrameDiff,
   state,
 }, null, 2));
 
@@ -129,6 +134,10 @@ if (actions.expect?.anyZombieVisualAssetIncludes) {
   const expected = actions.expect.anyZombieVisualAssetIncludes;
   if (!state.entities?.zombies?.some((zombie) => zombie.visualAsset?.includes(expected))) process.exitCode = 1;
 }
+if (actions.expect?.anyZombieAnimationSource) {
+  const expected = actions.expect.anyZombieAnimationSource;
+  if (!state.entities?.zombies?.some((zombie) => zombie.animationSource === expected)) process.exitCode = 1;
+}
 if (actions.expect?.anyPlantVisualAssetIncludes) {
   const expected = actions.expect.anyPlantVisualAssetIncludes;
   if (!state.entities?.plants?.some((plant) => plant.visualAsset?.includes(expected))) process.exitCode = 1;
@@ -159,4 +168,45 @@ if (actions.expect?.anyZombieDeathAssetIncludes) {
 }
 if (actions.expect?.noDamageNumbers && state.entities?.effects?.some((effect) => effect.type === "damageNumber")) {
   process.exitCode = 1;
+}
+if (actions.expect?.gifFramePixelDiff && (gifFrameDiff?.changedPixels ?? 0) < (actions.expect.gifFramePixelDiff.minChangedPixels ?? 80)) {
+  process.exitCode = 1;
+}
+
+async function measureGifFrameDiff(page, options) {
+  const sampleRegion = async () => page.evaluate((opts) => {
+    const canvas = document.querySelector("#game");
+    const ctx = canvas.getContext("2d");
+    const zombie = window.__gameState?.zombies?.find((candidate) => !opts.type || candidate.type === opts.type);
+    if (!zombie) return null;
+    window.__gameState.paused = true;
+    if (window.__gifTestX === undefined) window.__gifTestX = zombie.x;
+    zombie.x = window.__gifTestX;
+    const width = opts.width ?? 96;
+    const height = opts.height ?? 120;
+    const x = Math.max(0, Math.round(zombie.x - width / 2));
+    const y = Math.max(0, Math.round(160 + zombie.row * 86 + 43 - height / 2));
+    const imageData = ctx.getImageData(x, y, width, height);
+    return { x, y, width, height, data: Array.from(imageData.data) };
+  }, options);
+
+  await page.waitForTimeout(80);
+  const before = await sampleRegion();
+  await page.waitForTimeout(options.waitMs ?? 750);
+  await page.evaluate(() => {
+    const zombie = window.__gameState?.zombies?.[0];
+    if (zombie && window.__gifTestX !== undefined) zombie.x = window.__gifTestX;
+  });
+  await page.waitForTimeout(80);
+  const after = await sampleRegion();
+  if (!before || !after) return { changedPixels: 0, reason: "missing zombie" };
+  let changedPixels = 0;
+  for (let index = 0; index < before.data.length; index += 4) {
+    const delta = Math.abs(before.data[index] - after.data[index])
+      + Math.abs(before.data[index + 1] - after.data[index + 1])
+      + Math.abs(before.data[index + 2] - after.data[index + 2])
+      + Math.abs(before.data[index + 3] - after.data[index + 3]);
+    if (delta > 24) changedPixels += 1;
+  }
+  return { changedPixels, region: { x: before.x, y: before.y, width: before.width, height: before.height } };
 }

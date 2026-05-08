@@ -143,3 +143,14 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran browser verification for normal, sun, feedback/eating, expanded-unit, visual-asset, unit-death, and special-plant scenarios: PASS with no missing assets or console errors.
 - Ran the `develop-web-game` Playwright client against the expanded-unit scenario after linking the project `node_modules` into the skill script folder.
 - Screenshot checked: compact cards, torchwood, armed potato mine, fire peas, iron-door zombie, zamboni, and jalapeno row fire are visible.
+
+## 2026-05-08 Layout And Zombie GIF Verification Pass
+
+- Moved HUD card hot zones and the sun counter into separate slots so the plant balance no longer overlaps seed cards.
+- Added a dedicated mower lane overlay and adjusted daytime background cropping so the mower row stays clear of the house texture.
+- Kept every playable zombie on its own scenario GIF for walk/eat states; armor-drop feedback no longer downgrades visuals to a basic zombie, and zamboni remains a special driving state.
+- Added state-keyed image records for zombie drawing and serialized `animationSource: "gif"` for browser verification.
+- Added layout and GIF animation tests, including a browser pixel-diff check for live GIF frame changes.
+- Ran `npm test`: PASS, 35 tests.
+- Ran browser verification for layout, GIF animation, normal, sun, feedback/eating, visual-asset, expanded-unit, and special-plant scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: mower lane is clean, sun counter does not overlap cards, and zombie GIF animation is visible and measurable.

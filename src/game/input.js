@@ -79,10 +79,10 @@ export function getPlantCardRects() {
   const cards = ids.map((id, index) => {
     const col = index % 6;
     const row = Math.floor(index / 6);
-    return { id, kind: "plant", x: 22 + col * 76, y: 20 + row * 58, w: 68, h: 54 };
+    return { id, kind: "plant", x: 104 + col * 70, y: 18 + row * 54, w: 62, h: 50 };
   });
   const shovelIndex = ids.length;
-  cards.push({ id: "shovel", kind: "shovel", x: 22 + (shovelIndex % 6) * 76, y: 20 + Math.floor(shovelIndex / 6) * 58, w: 68, h: 54 });
+  cards.push({ id: "shovel", kind: "shovel", x: 104 + (shovelIndex % 6) * 70, y: 18 + Math.floor(shovelIndex / 6) * 54, w: 62, h: 50 });
   return cards;
 }
 
@@ -90,7 +90,7 @@ export function getZombieCardRects() {
   return Object.keys(ZOMBIES).map((id, index) => {
     const col = index % 6;
     const row = Math.floor(index / 6);
-    return { id, x: 842 + col * 68, y: 20 + row * 58, w: 62, h: 54 };
+    return { id, x: 836 + col * 68, y: 18 + row * 54, w: 62, h: 50 };
   });
 }
 

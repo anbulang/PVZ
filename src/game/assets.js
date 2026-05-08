@@ -124,6 +124,7 @@ export const ASSET_MANIFEST = {
     {
       walk: { paths: ASSET_PATHS.zombieWalk[type] },
       eat: { paths: ASSET_PATHS.zombieEat[type] },
+      special: { paths: ASSET_PATHS.zombieWalk[type] },
       death: { paths: ASSET_PATHS.zombieDeath[type] },
       sfx: {},
     },
@@ -147,6 +148,7 @@ export const ASSET_MANIFEST = {
 };
 
 const cache = new Map();
+const stateCache = new Map();
 
 export function normalizeAssetList(paths) {
   if (!paths) return [];
@@ -178,8 +180,35 @@ export function getAsset(paths) {
   return null;
 }
 
+export function getStateAsset(paths, stateKey) {
+  const normalized = normalizeAssetList(paths);
+  for (const path of normalized) {
+    const key = `${stateKey}:${path}`;
+    if (stateCache.has(key)) {
+      const record = stateCache.get(key);
+      if (record.loaded) return record;
+      if (!record.failed) return record;
+      continue;
+    }
+
+    const image = new Image();
+    image.decoding = "async";
+    image.src = encodeURI(path);
+    const record = { image, path, loaded: false, failed: false, stateKey };
+    image.addEventListener("load", () => {
+      record.loaded = true;
+    });
+    image.addEventListener("error", () => {
+      record.failed = true;
+    });
+    stateCache.set(key, record);
+    return record;
+  }
+  return null;
+}
+
 export function drawAsset(ctx, paths, x, y, width, height, options = {}) {
-  const asset = getAsset(paths);
+  const asset = options.stateKey ? getStateAsset(paths, options.stateKey) : getAsset(paths);
   if (!asset?.loaded || asset.failed) return false;
 
   ctx.save();
@@ -197,8 +226,7 @@ export function primaryAssetPath(paths) {
 
 export function zombieVisualFor(zombie) {
   const type = zombie?.type ?? "basic";
-  const state = zombie?.eating ? "eat" : "walk";
-  const visualType = state === "walk" && zombie?.armorDropped && ["cone", "bucket", "screen", "runner"].includes(type) ? "basic" : type;
-  const paths = state === "eat" ? ASSET_PATHS.zombieEat[visualType] : ASSET_PATHS.zombieWalk[visualType];
-  return { state, visualType, paths: normalizeAssetList(paths) };
+  const state = type === "zamboni" ? "special" : zombie?.eating ? "eat" : "walk";
+  const paths = state === "eat" ? ASSET_PATHS.zombieEat[type] : ASSET_PATHS.zombieWalk[type];
+  return { state, visualType: type, paths: normalizeAssetList(paths), animationSource: "gif" };
 }

@@ -35,10 +35,15 @@ test("critical animation and audio assets map to files in assets", () => {
     ASSET_PATHS.plantArmed.potatoMine[0],
     ASSET_PATHS.plantIdle.jalapeno[0],
     ASSET_PATHS.zombieWalk.basic[0],
+    ASSET_PATHS.zombieWalk.imp[0],
     ASSET_PATHS.zombieWalk.flag[0],
+    ASSET_PATHS.zombieWalk.cone[0],
     ASSET_PATHS.zombieWalk.screen[0],
+    ASSET_PATHS.zombieWalk.bucket[0],
     ASSET_PATHS.zombieWalk.zamboni[0],
+    ASSET_PATHS.zombieWalk.runner[0],
     ASSET_PATHS.zombieEat.basic[0],
+    ASSET_PATHS.zombieEat.flag[0],
     ASSET_PATHS.zombieEat.cone[0],
     ASSET_PATHS.zombieEat.screen[0],
     ASSET_PATHS.zombieEat.bucket[0],
@@ -70,6 +75,15 @@ test("zombie walk assets are animated gifs", () => {
   });
 });
 
+test("playable zombies with eating states map to animated eat gifs", () => {
+  ["basic", "imp", "flag", "cone", "screen", "bucket", "runner"].forEach((type) => {
+    assertExists(ASSET_PATHS.zombieWalk[type][0]);
+    assertExists(ASSET_PATHS.zombieEat[type][0]);
+    assert.equal(countGifFrames(ASSET_PATHS.zombieWalk[type][0]) > 1, true, `${type} walk should be animated`);
+    assert.equal(countGifFrames(ASSET_PATHS.zombieEat[type][0]) > 1, true, `${type} eat should be animated`);
+  });
+});
+
 test("background music uses the selected ogg track", () => {
   assert.deepEqual(ASSET_PATHS.music.background, ["assets/音效/ZombiesOnYourLawn.ogg"]);
   assert.equal(getAudioAssetPaths().music.includes("assets/音效/ZombiesOnYourLawn.ogg"), true);
@@ -79,8 +93,13 @@ test("zombie visual state selects matching scenario gifs", () => {
   assert.equal(zombieVisualFor({ type: "basic", eating: false }).paths[0], "assets/图片/僵尸/普通僵尸走路.gif");
   assert.equal(zombieVisualFor({ type: "basic", eating: true }).paths[0], "assets/图片/僵尸/普通僵尸啃食.gif");
   assert.equal(zombieVisualFor({ type: "screen", eating: false, armorDropped: false }).paths[0], "assets/图片/僵尸/铁门僵尸.gif");
-  assert.equal(zombieVisualFor({ type: "screen", eating: false, armorDropped: true }).paths[0], "assets/图片/僵尸/普通僵尸走路.gif");
+  assert.equal(zombieVisualFor({ type: "screen", eating: false, armorDropped: true }).paths[0], "assets/图片/僵尸/铁门僵尸.gif");
   assert.equal(zombieVisualFor({ type: "screen", eating: true, armorDropped: true }).paths[0], "assets/图片/僵尸/铁门僵尸啃食.gif");
+  assert.equal(zombieVisualFor({ type: "flag", eating: false }).paths[0], "assets/图片/僵尸/旗帜僵尸.gif");
+  assert.equal(zombieVisualFor({ type: "flag", eating: true }).paths[0], "assets/图片/僵尸/旗帜僵尸啃食.gif");
   assert.equal(zombieVisualFor({ type: "cone", eating: true, armorDropped: true }).paths[0], "assets/图片/僵尸/路障僵尸啃食.gif");
   assert.equal(zombieVisualFor({ type: "bucket", eating: true, armorDropped: true }).paths[0], "assets/图片/僵尸/铁桶僵尸啃食.gif");
+  assert.equal(zombieVisualFor({ type: "zamboni", eating: true }).state, "special");
+  assert.equal(zombieVisualFor({ type: "zamboni", eating: true }).paths[0], "assets/图片/僵尸/冰车僵尸.gif");
+  assert.equal(zombieVisualFor({ type: "basic", eating: false }).animationSource, "gif");
 });

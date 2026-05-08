@@ -1,4 +1,4 @@
-import { ASSET_PATHS, drawAsset, zombieVisualFor } from "./assets.js";
+import { ASSET_PATHS, drawAsset, getAsset, zombieVisualFor } from "./assets.js";
 import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js";
 import { getPlantCardRects, getZombieCardRects } from "./input.js";
 import { cellCenterX, rowCenterY } from "./systems.js";
@@ -9,6 +9,7 @@ export function renderGame(ctx, state) {
   drawBackground(ctx, width, height);
   drawHud(ctx, state);
   drawGrid(ctx);
+  drawMowerTrack(ctx);
   drawLaneMowers(ctx, state);
   drawDirectorWarning(ctx, state);
   drawPlants(ctx, state);
@@ -21,7 +22,7 @@ export function renderGame(ctx, state) {
 }
 
 function drawBackground(ctx, width, height) {
-  if (drawAsset(ctx, ASSET_PATHS.scene.day, width / 2, height / 2, width, height)) {
+  if (drawSceneCover(ctx, ASSET_PATHS.scene.day, width, height)) {
     ctx.fillStyle = "rgba(255, 244, 168, 0.08)";
     ctx.fillRect(0, 0, width, height);
     return;
@@ -48,11 +49,37 @@ function drawBackground(ctx, width, height) {
   ctx.fillRect(GRID.deployLeft + 132, GRID.top - 24, 82, GRID.rows * GRID.cellHeight + 48);
 }
 
-function drawHud(ctx, state) {
-  if (!drawAsset(ctx, ASSET_PATHS.ui.shop, 292, 76, 552, 124)) {
-    drawPanel(ctx, 16, 14, 552, 124, "#f7e8a6");
+function drawSceneCover(ctx, paths, width, height) {
+  const asset = ASSET_PATHS.scene.day ? drawSceneImage(ctx, paths, width, height) : false;
+  return asset;
+}
+
+function drawSceneImage(ctx, paths, width, height) {
+  const record = getAsset(paths);
+  if (!record?.loaded || record.failed) return false;
+  const image = record.image;
+  const sourceAspect = image.naturalWidth / image.naturalHeight;
+  const destAspect = width / height;
+  let sx = 0;
+  let sy = 0;
+  let sw = image.naturalWidth;
+  let sh = image.naturalHeight;
+  if (sourceAspect > destAspect) {
+    sw = image.naturalHeight * destAspect;
+    sx = Math.max(0, Math.min(image.naturalWidth - sw, image.naturalWidth * 0.12));
+  } else {
+    sh = image.naturalWidth / destAspect;
+    sy = Math.max(0, Math.min(image.naturalHeight - sh, image.naturalHeight * 0.08));
   }
-  if (!drawAsset(ctx, ASSET_PATHS.ui.seedChooser, 988, 76, 552, 124)) {
+  ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height);
+  return true;
+}
+
+function drawHud(ctx, state) {
+  if (!drawAsset(ctx, ASSET_PATHS.ui.shop, 276, 74, 520, 118)) {
+    drawPanel(ctx, 16, 14, 520, 118, "#f7e8a6");
+  }
+  if (!drawAsset(ctx, ASSET_PATHS.ui.seedChooser, 988, 74, 552, 118)) {
     drawPanel(ctx, 712, 14, 552, 124, "#ded6c9");
   }
   ctx.fillStyle = "rgba(247, 232, 166, 0.78)";
@@ -72,18 +99,18 @@ function drawHud(ctx, state) {
 function drawSunCounter(ctx, state) {
   const sun = Math.floor(state.resources.plant.sun);
   ctx.save();
-  if (!drawAsset(ctx, ASSET_PATHS.ui.sunCounter, 106, 144, 156, 42)) {
-    drawPanel(ctx, 30, 130, 156, 28, "#fff0a8");
+  if (!drawAsset(ctx, ASSET_PATHS.ui.sunCounter, 60, 106, 86, 38)) {
+    drawPanel(ctx, 18, 86, 84, 38, "#fff0a8");
   }
-  if (!drawAsset(ctx, ASSET_PATHS.ui.sun, 48, 144, 30, 30)) {
+  if (!drawAsset(ctx, ASSET_PATHS.ui.sun, 34, 106, 30, 30)) {
     ctx.fillStyle = "#ffd54a";
     ctx.beginPath();
-    ctx.arc(48, 144, 13, 0, Math.PI * 2);
+    ctx.arc(34, 106, 13, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.fillStyle = "#20351a";
-  ctx.font = "900 22px system-ui";
-  ctx.fillText(`阳光 ${sun}`, 68, 151);
+  ctx.font = "900 20px system-ui";
+  ctx.fillText(String(sun), 50, 113);
   ctx.restore();
 }
 
@@ -182,6 +209,31 @@ function drawGrid(ctx) {
   ctx.fillStyle = "#fff7c2";
   ctx.font = "700 16px system-ui";
   ctx.fillText("僵尸投放区", GRID.deployLeft + 18, GRID.top - 12);
+}
+
+function drawMowerTrack(ctx) {
+  const x = 0;
+  const y = GRID.top - 10;
+  const w = GRID.left - 10;
+  const h = GRID.rows * GRID.cellHeight + 20;
+  ctx.save();
+  const gradient = ctx.createLinearGradient(x, y, x + w, y);
+  gradient.addColorStop(0, "#c7b789");
+  gradient.addColorStop(0.55, "#d8c995");
+  gradient.addColorStop(1, "#907c58");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  for (let row = 0; row < GRID.rows; row += 1) {
+    const rowY = GRID.top + row * GRID.cellHeight;
+    ctx.fillRect(10, rowY + 10, w - 22, GRID.cellHeight - 20);
+  }
+  ctx.strokeStyle = "rgba(73,57,38,0.55)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 6, y + 6, w - 12, h - 12);
+  ctx.fillStyle = "rgba(62, 45, 28, 0.35)";
+  ctx.fillRect(w - 12, y, 10, h);
+  ctx.restore();
 }
 
 function drawLaneMowers(ctx, state) {
@@ -443,7 +495,7 @@ function drawZombieIcon(ctx, type, x, y, time = 0, zombie = null) {
   if (zombie?.flash > 0) ctx.globalAlpha = 0.55;
   const spriteSize = zombieSpriteSize(type);
   const visual = zombieVisualFor(zombie ?? { type, eating: false, armorDropped: false });
-  if (drawAsset(ctx, visual.paths, 0, -8, spriteSize[0], spriteSize[1])) {
+  if (drawAsset(ctx, visual.paths, 0, -8, spriteSize[0], spriteSize[1], { stateKey: `${type}:${visual.state}` })) {
     ctx.restore();
     return;
   }

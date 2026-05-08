@@ -83,6 +83,7 @@ export function serializeGameState(state) {
         armorDropped: Boolean(zombie.armorDropped),
         visualState: zombieVisualFor(zombie).state,
         visualAsset: zombieVisualFor(zombie).paths[0] ?? null,
+        animationSource: zombieVisualFor(zombie).animationSource,
       })),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
