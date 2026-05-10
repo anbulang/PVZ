@@ -65,3 +65,14 @@ test("collecting sun pickup increases plant resources", () => {
   assert.match(state.status, /当前 175/);
   assert.equal(state.audioEvents.some((event) => event.type === "collectSun"), true);
 });
+
+test("collect all sun picks up visible sun in one action", () => {
+  const state = createGameState();
+  state.sunPickups.push({ id: "sun-a", x: 200, y: 200, amount: 25, ttl: 10 });
+  state.sunPickups.push({ id: "sun-b", x: 280, y: 220, amount: 50, ttl: 10 });
+  applyCommand(state, { type: "collectAllSun" });
+  assert.equal(state.resources.plant.sun, 225);
+  assert.equal(state.sunPickups.length, 0);
+  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount === 75), true);
+  assert.match(state.status, /一键收集 75 阳光，当前 225/);
+});

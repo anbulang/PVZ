@@ -53,7 +53,7 @@ function updateDirector(state, dt) {
 
   state.director.waveClock -= dt;
   if (state.director.waveClock <= 0) {
-    const row = seededLane(state, state.director.waveCount + 3);
+    const row = choosePressureLane(state);
     const zombieType = chooseDirectorZombie(state);
     state.director.warning = { row, zombieType, remaining: ROUND.waveWarning };
     state.audioEvents.push({ type: "wave" });
@@ -68,6 +68,21 @@ function chooseDirectorZombie(state) {
   if (state.time > 35 && state.director.waveCount % 3 === 1) return "runner";
   if (state.director.waveCount % 2 === 1) return "imp";
   return "basic";
+}
+
+function choosePressureLane(state) {
+  if (state.plants.length === 0) return seededLane(state, state.director.waveCount + 3);
+  const scores = Array.from({ length: GRID.rows }, (_, row) => {
+    const plants = state.plants.filter((plant) => plant.row === row);
+    const zombies = state.zombies.filter((zombie) => zombie.row === row);
+    const rightmostPlant = plants.reduce((rightmost, plant) => Math.max(rightmost, plant.col), -1);
+    return {
+      row,
+      score: plants.length * 10 + rightmostPlant * 1.5 - zombies.length * 4,
+    };
+  });
+  scores.sort((a, b) => b.score - a.score || a.row - b.row);
+  return scores[0].row;
 }
 
 function seededLane(state, salt) {
@@ -86,14 +101,19 @@ function updateSunPickups(state, dt) {
 
 function createSunPickup(state, x, y, amount, kind = "plant") {
   const row = Math.max(0, Math.min(GRID.rows - 1, Math.floor((y - GRID.top) / GRID.cellHeight)));
+  const overlapCount = state.sunPickups.filter((sun) => Math.hypot(sun.x - x, sun.y - y) < 54).length;
+  const spreadAngle = overlapCount * 2.35;
+  const spreadRadius = overlapCount === 0 ? 0 : 22 + (overlapCount % 3) * 8;
+  const spreadX = Math.cos(spreadAngle) * spreadRadius;
+  const spreadY = Math.sin(spreadAngle) * spreadRadius;
   state.sunPickups.push({
     id: nextId(state, "sun"),
-    x,
-    y,
+    x: x + spreadX,
+    y: y + spreadY,
     amount,
     kind,
     ttl: SUN_PICKUP.ttl,
-    targetY: kind === "sky" ? rowCenterY(row) : y - 26,
+    targetY: kind === "sky" ? rowCenterY(row) : y - 26 + spreadY * 0.45,
   });
 }
 

@@ -154,3 +154,15 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 35 tests.
 - Ran browser verification for layout, GIF animation, normal, sun, feedback/eating, visual-asset, expanded-unit, and special-plant scenarios: PASS with no missing assets or console errors.
 - Screenshot checked: mower lane is clean, sun counter does not overlap cards, and zombie GIF animation is visible and measurable.
+
+## 2026-05-11 Chrome Playtest Fun Pass
+
+- Used Chrome/Playwright to play an opening sequence with sunflower, peashooter, manual zombie deployment, sun collection, and auto wave pressure.
+- Found two play-feel issues: visible sun stacked around sunflowers and was tedious to click; auto waves could hit empty lanes instead of the defended lane, making the board feel inactive.
+- Added a sun-counter click shortcut that collects all visible sun pickups at once while preserving individual `+amount` feedback.
+- Spread overlapping sun pickups around their source so sunflower output is easier to read and click.
+- Changed the director to prioritize rows that already contain plant defenses, while avoiding over-stacking zombies in the same lane.
+- Added an inline favicon to eliminate the browser favicon 404 during Chrome playtests.
+- Ran `npm test`: PASS, 39 tests.
+- Ran browser verification for normal, sun collection, feedback/eating, visual assets, and GIF animation scenarios: PASS with no missing assets or console errors.
+- Chrome screenshot checked: same-lane combat is active, one-click sun collection clears pickups, and the board has a clearer early-game rhythm.

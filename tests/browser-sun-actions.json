@@ -4,11 +4,11 @@
     { "command": { "type": "placePlant", "plantType": "sunflower", "row": 2, "col": 2 }, "frames": 2 },
     { "command": { "type": "deployZombie", "zombieType": "basic", "row": 4 }, "frames": 2 },
     { "buttons": [], "advanceMs": 8300 },
-    { "command": { "type": "collectFirstSun", "kind": "plant" }, "frames": 2 },
+    { "command": { "type": "collectAllSun" }, "frames": 2 },
     { "buttons": [], "advanceMs": 250 }
   ],
   "expect": {
-    "minSun": 125,
+    "minSun": 150,
     "audioUnlocked": true,
     "musicActive": true,
     "anyCollectSunEffect": true,

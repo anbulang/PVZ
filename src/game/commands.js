@@ -35,6 +35,7 @@ export function applyCommand(state, command) {
   if (command.type === "shovel") return shovelPlant(state, command);
   if (command.type === "deployZombie") return deployZombie(state, command);
   if (command.type === "collectSun") return collectSun(state, command);
+  if (command.type === "collectAllSun") return collectAllSun(state);
   state.status = "未知命令。";
 }
 
@@ -101,6 +102,20 @@ function collectSun(state, command) {
   pushSunDeltaEffect(state, sun.amount);
   state.audioEvents.push({ type: "collectSun" });
   state.status = `收集 ${sun.amount} 阳光，当前 ${Math.floor(state.resources.plant.sun)}。`;
+}
+
+function collectAllSun(state) {
+  if (state.sunPickups.length === 0) return setStatus(state, "没有可收集的阳光。");
+  const pickups = state.sunPickups;
+  const total = pickups.reduce((sum, sun) => sum + sun.amount, 0);
+  state.resources.plant.sun += total;
+  state.sunPickups = [];
+  for (const sun of pickups) {
+    state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, amount: sun.amount, ttl: 1.0, maxTtl: 1.0 });
+  }
+  pushSunDeltaEffect(state, total);
+  state.audioEvents.push({ type: "collectSun" });
+  state.status = `一键收集 ${total} 阳光，当前 ${Math.floor(state.resources.plant.sun)}。`;
 }
 
 function pushSunDeltaEffect(state, amount) {

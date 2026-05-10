@@ -73,6 +73,7 @@ if (actions.expect?.gifFramePixelDiff) {
   gifFrameDiff = await measureGifFrameDiff(page, actions.expect.gifFramePixelDiff);
 }
 const screenshotPath = "test-results/local-versus-game.png";
+fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
 await page.locator("#game").screenshot({ path: screenshotPath });
 await browser.close();
 

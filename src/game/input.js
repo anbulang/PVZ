@@ -1,6 +1,8 @@
 import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js";
 import { enqueueCommand } from "./commands.js";
 
+export const SUN_COUNTER_RECT = { x: 18, y: 86, w: 84, h: 38 };
+
 export function attachInput(canvas, state) {
   canvas.addEventListener("click", (event) => {
     const point = canvasPoint(canvas, event);
@@ -16,6 +18,8 @@ export function attachInput(canvas, state) {
 }
 
 export function commandFromPoint(state, point) {
+  if (hitSunCounter(point) && state.sunPickups.length > 0) return { type: "collectAllSun" };
+
   const sun = hitSunPickup(state, point);
   if (sun) return { type: "collectSun", id: sun.id };
 
@@ -39,11 +43,23 @@ export function commandFromPoint(state, point) {
 }
 
 function hitSunPickup(state, point) {
-  return state.sunPickups.find((sun) => {
-    const dx = sun.x - point.x;
-    const dy = sun.y - point.y;
-    return Math.hypot(dx, dy) <= SUN_PICKUP.radius;
-  });
+  return state.sunPickups
+    .map((sun) => {
+      const dx = sun.x - point.x;
+      const dy = sun.y - point.y;
+      return { sun, distance: Math.hypot(dx, dy) };
+    })
+    .filter((candidate) => candidate.distance <= Math.max(34, SUN_PICKUP.radius))
+    .sort((a, b) => a.distance - b.distance)[0]?.sun;
+}
+
+function hitSunCounter(point) {
+  return (
+    point.x >= SUN_COUNTER_RECT.x &&
+    point.x <= SUN_COUNTER_RECT.x + SUN_COUNTER_RECT.w &&
+    point.y >= SUN_COUNTER_RECT.y &&
+    point.y <= SUN_COUNTER_RECT.y + SUN_COUNTER_RECT.h
+  );
 }
 
 function toggleSelection(state, command) {

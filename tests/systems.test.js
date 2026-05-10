@@ -29,6 +29,15 @@ test("sunflowers produce visible sun pickups with amounts", () => {
   assert.equal(producedSun.y < 360, true);
 });
 
+test("repeated sunflower sun pickups spread instead of stacking exactly", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
+  step(state, 15.6);
+  const produced = state.sunPickups.filter((sun) => sun.kind === "plant");
+  assert.equal(produced.length >= 2, true);
+  assert.notEqual(Math.round(produced[0].x), Math.round(produced[1].x));
+});
+
 test("twin sunflowers produce larger sun pickups", () => {
   const state = createGameState();
   state.resources.plant.sun = 250;
@@ -130,6 +139,13 @@ test("director warns and then spawns pressure zombies", () => {
   step(state, 3.2);
   assert.equal(state.director.waveCount, 1);
   assert.equal(state.zombies.length, 1);
+});
+
+test("director pressures rows that already have a defense", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 3, col: 1 });
+  step(state, 6.2);
+  assert.equal(state.director.warning?.row, 3);
 });
 
 test("lane mower clears the first breakthrough in a lane", () => {
