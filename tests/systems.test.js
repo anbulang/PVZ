@@ -29,13 +29,13 @@ test("sunflowers produce visible sun pickups with amounts", () => {
   assert.equal(producedSun.y <= 300, true);
 });
 
-test("repeated sunflower sun pickups spread instead of stacking exactly", () => {
+test("nearby sunflower sun pickups merge into a higher-value pickup", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
   step(state, 15.6);
   const produced = state.sunPickups.filter((sun) => sun.kind === "plant");
-  assert.equal(produced.length >= 2, true);
-  assert.notEqual(Math.round(produced[0].x), Math.round(produced[1].x));
+  assert.equal(produced.length, 1);
+  assert.equal(produced[0].amount, 50);
 });
 
 test("twin sunflowers produce larger sun pickups", () => {

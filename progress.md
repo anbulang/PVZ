@@ -178,3 +178,14 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 40 tests.
 - Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
 - Screenshot checked: ready overlay holds at 180 seconds with 0 waves and 0 zombies; first card selection starts the match.
+
+## 2026-05-12 Game Studio Midgame Readability Pass
+
+- Used the Game Studio playtest workflow on an opening-to-midgame sequence with economy, manual zombie pressure, auto waves, and mower activation.
+- Found the main playability issue was visual noise from many separate sun pickups around sunflowers, which pulled attention away from lane combat.
+- Added simulation-level sun pickup merging: nearby same-kind sun pickups combine into one higher-value pickup up to 100, preserving total economy while reducing clutter.
+- Updated browser module cache versions to force Chrome to load the current optimized simulation and render code.
+- Added/updated tests so repeated sunflower production now verifies a merged 50-sun pickup instead of two overlapping 25-sun pickups.
+- Ran `npm test`: PASS, 40 tests.
+- Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: midgame visible sun pickups dropped from six small overlapping items to four clearer pickups including a `50`, with combat lanes easier to read.

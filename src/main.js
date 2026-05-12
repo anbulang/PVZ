@@ -1,9 +1,9 @@
-import { enqueueCommand } from "./game/commands.js?v=20260512-ready2";
-import { getAudioDebugState, processAudioEvents, unlockAudio } from "./game/audio.js?v=20260512-ready2";
-import { attachInput } from "./game/input.js?v=20260512-ready2";
-import { renderGame } from "./game/render.js?v=20260512-ready2";
-import { createGameState, serializeGameState } from "./game/state.js?v=20260512-ready2";
-import { updateGame } from "./game/systems.js?v=20260512-ready2";
+import { enqueueCommand } from "./game/commands.js?v=20260512-studio1";
+import { getAudioDebugState, processAudioEvents, unlockAudio } from "./game/audio.js?v=20260512-studio1";
+import { attachInput } from "./game/input.js?v=20260512-studio1";
+import { renderGame } from "./game/render.js?v=20260512-studio1";
+import { createGameState, serializeGameState } from "./game/state.js?v=20260512-studio1";
+import { updateGame } from "./game/systems.js?v=20260512-studio1";
 
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");

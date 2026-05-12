@@ -1,5 +1,5 @@
-import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-ready2";
-import { enqueueCommand } from "./commands.js?v=20260512-ready2";
+import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-studio1";
+import { enqueueCommand } from "./commands.js?v=20260512-studio1";
 
 export const SUN_COUNTER_RECT = { x: 18, y: 86, w: 84, h: 38 };
 

@@ -1,7 +1,7 @@
-import { ASSET_PATHS, drawAsset, getAsset, zombieVisualFor } from "./assets.js?v=20260512-ready2";
-import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-ready2";
-import { getPlantCardRects, getZombieCardRects } from "./input.js?v=20260512-ready2";
-import { cellCenterX, rowCenterY } from "./systems.js?v=20260512-ready2";
+import { ASSET_PATHS, drawAsset, getAsset, zombieVisualFor } from "./assets.js?v=20260512-studio1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-studio1";
+import { getPlantCardRects, getZombieCardRects } from "./input.js?v=20260512-studio1";
+import { cellCenterX, rowCenterY } from "./systems.js?v=20260512-studio1";
 
 export function renderGame(ctx, state) {
   const { width, height } = ctx.canvas;

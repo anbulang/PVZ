@@ -1,6 +1,6 @@
-import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-ready2";
-import { drainCommandQueue, spawnZombie } from "./commands.js?v=20260512-ready2";
-import { nextId } from "./state.js?v=20260512-ready2";
+import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-studio1";
+import { drainCommandQueue, spawnZombie } from "./commands.js?v=20260512-studio1";
+import { nextId } from "./state.js?v=20260512-studio1";
 
 export function updateGame(state, dt) {
   drainCommandQueue(state);
@@ -106,14 +106,28 @@ function createSunPickup(state, x, y, amount, kind = "plant") {
   const spreadRadius = overlapCount === 0 ? 0 : 22 + (overlapCount % 3) * 8;
   const spreadX = Math.cos(spreadAngle) * spreadRadius;
   const spreadY = Math.sin(spreadAngle) * spreadRadius;
-  state.sunPickups.push({
-    id: nextId(state, "sun"),
+  const pickup = {
     x: x + spreadX,
     y: y + spreadY,
+    targetY: kind === "sky" ? rowCenterY(row) : y - 26 + spreadY * 0.45,
+  };
+  const nearby = state.sunPickups.find((sun) => sun.kind === kind && sun.amount < 100 && Math.hypot(sun.x - pickup.x, sun.y - pickup.y) < 62);
+  if (nearby) {
+    nearby.amount += amount;
+    nearby.ttl = SUN_PICKUP.ttl;
+    nearby.x = nearby.x * 0.72 + pickup.x * 0.28;
+    nearby.y = nearby.y * 0.72 + pickup.y * 0.28;
+    nearby.targetY = pickup.targetY;
+    return;
+  }
+  state.sunPickups.push({
+    id: nextId(state, "sun"),
+    x: pickup.x,
+    y: pickup.y,
     amount,
     kind,
     ttl: SUN_PICKUP.ttl,
-    targetY: kind === "sky" ? rowCenterY(row) : y - 26 + spreadY * 0.45,
+    targetY: pickup.targetY,
   });
 }
 

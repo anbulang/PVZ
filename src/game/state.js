@@ -1,5 +1,5 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260512-ready2";
-import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js?v=20260512-ready2";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260512-studio1";
+import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js?v=20260512-studio1";
 
 export function createGameState() {
   return {
