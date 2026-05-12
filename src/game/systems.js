@@ -1,10 +1,10 @@
-import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js";
-import { drainCommandQueue, spawnZombie } from "./commands.js";
-import { nextId } from "./state.js";
+import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-ready2";
+import { drainCommandQueue, spawnZombie } from "./commands.js?v=20260512-ready2";
+import { nextId } from "./state.js?v=20260512-ready2";
 
 export function updateGame(state, dt) {
   drainCommandQueue(state);
-  if (state.paused || state.winner) return;
+  if (!state.started || state.paused || state.winner) return;
   state.time += dt;
   state.timer.remaining = Math.max(0, state.timer.remaining - dt);
   updateCooldowns(state, dt);
@@ -139,7 +139,7 @@ function updatePlantActions(state, dt) {
     }
     if (config.produceEvery && plant.actionClock >= config.produceEvery) {
       plant.actionClock = 0;
-      createSunPickup(state, cellCenterX(plant.col) + 16, rowCenterY(plant.row) - 56, config.produceAmount);
+      createSunPickup(state, cellCenterX(plant.col) + 34, rowCenterY(plant.row) - 82, config.produceAmount);
       state.effects.push({ id: nextId(state, "effect"), type: "sunPop", row: plant.row, col: plant.col, ttl: 0.8 });
       state.audioEvents.push({ type: "grow" });
     }

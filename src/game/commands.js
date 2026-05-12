@@ -1,5 +1,5 @@
-import { GRID, PLANTS, ZOMBIES } from "./config.js";
-import { nextId, resetGameState } from "./state.js";
+import { GRID, PLANTS, ZOMBIES } from "./config.js?v=20260512-ready2";
+import { nextId, resetGameState } from "./state.js?v=20260512-ready2";
 
 export function enqueueCommand(state, command) {
   state.commandQueue.push(command);
@@ -25,6 +25,7 @@ export function applyCommand(state, command) {
     state.status = "游戏已结束，按 r 重新开始。";
     return;
   }
+  if (!state.started) state.started = true;
   if (command.type === "select") return selectCard(state, command);
   if (command.type === "clearSelection") {
     state.selection = null;

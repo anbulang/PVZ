@@ -26,7 +26,7 @@ test("sunflowers produce visible sun pickups with amounts", () => {
   const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
   assert.equal(Boolean(producedSun), true);
   assert.equal(producedSun.amount, 25);
-  assert.equal(producedSun.y < 360, true);
+  assert.equal(producedSun.y <= 300, true);
 });
 
 test("repeated sunflower sun pickups spread instead of stacking exactly", () => {
@@ -127,6 +127,7 @@ test("zombie wins after crossing the left edge", () => {
 
 test("plant wins when timer ends and field is clear", () => {
   const state = createGameState();
+  state.started = true;
   state.timer.remaining = 0.05;
   step(state, 0.1);
   assert.equal(state.winner, "plant");
@@ -134,6 +135,7 @@ test("plant wins when timer ends and field is clear", () => {
 
 test("director warns and then spawns pressure zombies", () => {
   const state = createGameState();
+  state.started = true;
   step(state, 6.2);
   assert.equal(Boolean(state.director.warning), true);
   step(state, 3.2);
@@ -146,6 +148,18 @@ test("director pressures rows that already have a defense", () => {
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 3, col: 1 });
   step(state, 6.2);
   assert.equal(state.director.warning?.row, 3);
+});
+
+test("game waits for first interaction before timers and waves advance", () => {
+  const state = createGameState();
+  step(state, 10);
+  assert.equal(state.timer.remaining, 180);
+  assert.equal(state.director.waveCount, 0);
+  assert.equal(state.director.warning, null);
+  applyCommand(state, { type: "clearSelection" });
+  step(state, 1);
+  assert.equal(state.started, true);
+  assert.equal(state.timer.remaining < 180, true);
 });
 
 test("lane mower clears the first breakthrough in a lane", () => {

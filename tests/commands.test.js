@@ -6,6 +6,7 @@ import { enqueueCommand, applyCommand, drainCommandQueue } from "../src/game/com
 test("plant placement spends sun and occupies a grid cell", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "peashooter", row: 2, col: 1 });
+  assert.equal(state.started, true);
   assert.equal(state.resources.plant.sun, 50);
   assert.equal(state.plants.length, 1);
   assert.equal(state.plants[0].type, "peashooter");
@@ -25,6 +26,7 @@ test("invalid plant placement leaves state unchanged and sets status", () => {
 test("zombie deployment spends brain and creates zombie", () => {
   const state = createGameState();
   applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 3 });
+  assert.equal(state.started, true);
   assert.equal(state.resources.zombie.brain, 50);
   assert.equal(state.zombies.length, 1);
   assert.equal(state.zombies[0].type, "basic");

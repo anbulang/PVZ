@@ -1,9 +1,10 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js";
-import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260512-ready2";
+import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js?v=20260512-ready2";
 
 export function createGameState() {
   return {
     mode: "playing",
+    started: false,
     grid: { rows: GRID.rows, cols: GRID.cols },
     time: 0,
     timer: { remaining: ROUND.duration },
@@ -31,7 +32,7 @@ export function createGameState() {
     },
     commandQueue: [],
     nextEntityId: 1,
-    status: "植物方选择卡牌种植，僵尸方选择卡牌投放。",
+    status: "选择卡牌开始攻防。",
     paused: false,
     winner: null,
   };
@@ -50,6 +51,7 @@ export function nextId(state, prefix) {
 export function serializeGameState(state) {
   return JSON.stringify({
     mode: state.mode,
+    started: state.started,
     paused: state.paused,
     gameOver: Boolean(state.winner),
     winner: state.winner,

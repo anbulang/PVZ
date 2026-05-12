@@ -1,7 +1,7 @@
-import { ASSET_PATHS, drawAsset, getAsset, zombieVisualFor } from "./assets.js";
-import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js";
-import { getPlantCardRects, getZombieCardRects } from "./input.js";
-import { cellCenterX, rowCenterY } from "./systems.js";
+import { ASSET_PATHS, drawAsset, getAsset, zombieVisualFor } from "./assets.js?v=20260512-ready2";
+import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-ready2";
+import { getPlantCardRects, getZombieCardRects } from "./input.js?v=20260512-ready2";
+import { cellCenterX, rowCenterY } from "./systems.js?v=20260512-ready2";
 
 export function renderGame(ctx, state) {
   const { width, height } = ctx.canvas;
@@ -18,7 +18,7 @@ export function renderGame(ctx, state) {
   drawZombies(ctx, state);
   drawEffects(ctx, state);
   drawStatus(ctx, state);
-  if (state.paused || state.winner) drawOverlay(ctx, state);
+  if (!state.started || state.paused || state.winner) drawOverlay(ctx, state);
 }
 
 function drawBackground(ctx, width, height) {
@@ -427,10 +427,11 @@ function drawOverlay(ctx, state) {
   ctx.fillStyle = "#fff5bd";
   ctx.font = "800 48px system-ui";
   ctx.textAlign = "center";
-  const text = state.winner ? (state.winner === "plant" ? "植物方胜利" : "僵尸方胜利") : "暂停";
+  const text = !state.started ? "准备开始" : state.winner ? (state.winner === "plant" ? "植物方胜利" : "僵尸方胜利") : "暂停";
   ctx.fillText(text, 640, 335);
   ctx.font = "22px system-ui";
-  ctx.fillText(state.winner ? "按 r 重新开始" : "按 p 继续", 640, 378);
+  const hint = !state.started ? "选择任意卡牌后开始计时" : state.winner ? "按 r 重新开始" : "按 p 继续";
+  ctx.fillText(hint, 640, 378);
   ctx.textAlign = "left";
 }
 

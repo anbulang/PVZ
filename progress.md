@@ -166,3 +166,15 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 39 tests.
 - Ran browser verification for normal, sun collection, feedback/eating, visual assets, and GIF animation scenarios: PASS with no missing assets or console errors.
 - Chrome screenshot checked: same-lane combat is active, one-click sun collection clears pickups, and the board has a clearer early-game rhythm.
+
+## 2026-05-12 Game Studio Playtest Foundation Pass
+
+- Applied the `game-studio:web-game-foundations` frame: kept simulation, rendering, input, and asset boundaries intact while improving the core loop.
+- Playtested an opening sequence and found that the game could advance waves before the player made a first move, which made refreshed tabs feel unfair and confusing.
+- Added a `started` simulation flag so timers, resources, waves, and zombie movement wait until the first player interaction.
+- Added a ready overlay that says `准备开始` and explains that selecting a card starts the timer.
+- Moved sunflower-generated sun higher above the plant so pickups are easier to read and no longer cover the sunflower head.
+- Added cache-busting query versions for the browser module graph so Chrome loads the current gameplay code after refresh.
+- Ran `npm test`: PASS, 40 tests.
+- Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: ready overlay holds at 180 seconds with 0 waves and 0 zombies; first card selection starts the match.

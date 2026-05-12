@@ -1,4 +1,4 @@
-import { ASSET_PATHS, normalizeAssetList } from "./assets.js";
+import { ASSET_PATHS, normalizeAssetList } from "./assets.js?v=20260512-ready2";
 
 const audioCache = new Map();
 const sfxCursor = new Map();
