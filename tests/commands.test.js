@@ -35,7 +35,7 @@ test("zombie deployment spends brain and creates zombie", () => {
 test("imp zombie is a fast low-cost pressure option", () => {
   const state = createGameState();
   applyCommand(state, { type: "deployZombie", zombieType: "imp", row: 4 });
-  assert.equal(state.resources.zombie.brain, 40);
+  assert.equal(state.resources.zombie.brain, 60);
   assert.equal(state.zombies[0].type, "imp");
   assert.equal(state.zombies[0].hp, 90);
 });

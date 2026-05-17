@@ -38,7 +38,7 @@ export const PLANTS = {
 
 export const ZOMBIES = {
   basic: { side: "zombie", name: "普通僵尸", cost: 50, cooldown: 3, hp: 160, speed: 20, biteDps: 42 },
-  imp: { side: "zombie", name: "小鬼僵尸", cost: 60, cooldown: 3.5, hp: 90, speed: 46, biteDps: 30 },
+  imp: { side: "zombie", name: "小鬼僵尸", cost: 40, cooldown: 3.5, hp: 90, speed: 46, biteDps: 30 },
   flag: { side: "zombie", name: "旗帜僵尸", cost: 80, cooldown: 4, hp: 180, speed: 28, biteDps: 42 },
   cone: { side: "zombie", name: "路障僵尸", cost: 100, cooldown: 5, hp: 320, speed: 18, biteDps: 48 },
   screen: { side: "zombie", name: "铁门僵尸", cost: 150, cooldown: 6.5, hp: 520, speed: 16, biteDps: 46 },
