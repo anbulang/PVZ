@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createGameState } from "../src/game/state.js";
-import { applyCommand } from "../src/game/commands.js";
+import { createGameState, serializeGameState } from "../src/game/state.js";
+import { applyCommand, spawnZombie } from "../src/game/commands.js";
 import { updateGame } from "../src/game/systems.js";
+import { ZOMBIES } from "../src/game/config.js";
+import { armorDropAssetFor } from "../src/game/assets.js";
 
 function step(state, seconds) {
   const frames = Math.round(seconds * 60);
@@ -66,6 +68,23 @@ test("shooters create projectiles that damage zombies", () => {
   step(state, 4);
   assert.equal(state.projectiles.length >= 0, true);
   assert.equal(state.zombies[0].hp < hpBefore, true);
+});
+
+test("shooters enter attack visual state when firing", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "peashooter", row: 2, col: 0 });
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  step(state, 1.46);
+  assert.equal(state.plants[0].visualState, "attack");
+  assert.equal(state.plants[0].visualTimer > 0, true);
+});
+
+test("sunflowers enter produce visual state when creating sun", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
+  step(state, 7.55);
+  assert.equal(state.plants[0].visualState, "produce");
+  assert.equal(state.sunPickups.some((sun) => sun.kind === "plant" && sun.amount === 25), true);
 });
 
 test("repeaters fire burst projectiles", () => {
@@ -133,21 +152,25 @@ test("plant wins when timer ends and field is clear", () => {
   assert.equal(state.winner, "plant");
 });
 
-test("director warns and then spawns pressure zombies", () => {
+test("versus director never auto spawns zombies", () => {
   const state = createGameState();
   state.started = true;
-  step(state, 6.2);
-  assert.equal(Boolean(state.director.warning), true);
-  step(state, 3.2);
-  assert.equal(state.director.waveCount, 1);
-  assert.equal(state.zombies.length, 1);
+  step(state, 45);
+  assert.equal(state.director.autoWaves, false);
+  assert.equal(state.director.warning, null);
+  assert.equal(state.director.waveCount, 0);
+  assert.equal(state.zombies.length, 0);
+  assert.equal(state.resources.zombie.brain > 100, true);
 });
 
-test("director pressures rows that already have a defense", () => {
+test("manual zombie deployment drives versus pressure", () => {
   const state = createGameState();
-  applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 3, col: 1 });
-  step(state, 6.2);
-  assert.equal(state.director.warning?.row, 3);
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 3 });
+  assert.equal(state.director.manualDeployCount, 1);
+  assert.equal(state.director.autoWaves, false);
+  step(state, 0.5);
+  assert.equal(state.director.warning, null);
+  assert.equal(state.director.threat > 0, true);
 });
 
 test("game waits for first interaction before timers and waves advance", () => {
@@ -187,6 +210,17 @@ test("cherry bomb detonates and clears nearby zombies", () => {
   assert.equal(state.effects.some((effect) => effect.type === "zombieDeath" && effect.zombieType === "cone"), true);
 });
 
+test("zombie death effect keeps a ground anchored fall direction", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  state.zombies[0].hp = 0;
+  step(state, 0.1);
+  const death = state.effects.find((effect) => effect.type === "zombieDeath");
+  assert.equal(Boolean(death), true);
+  assert.equal(death.anchor, "ground");
+  assert.equal(death.motion, "fall-down");
+});
+
 test("jalapeno clears its entire lane", () => {
   const state = createGameState();
   state.resources.plant.sun = 300;
@@ -213,6 +247,25 @@ test("armored zombies drop visual feedback when armor breaks", () => {
   assert.equal(state.audioEvents.some((event) => event.type === "armorDrop"), true);
 });
 
+test("each armored zombie drops its matching armor type", () => {
+  for (const type of ["cone", "bucket", "screen", "runner"]) {
+    const state = createGameState();
+    state.started = true;
+    spawnZombie(state, type, 0, { x: 300 });
+    state.zombies[0].hp = state.zombies[0].maxHp * 0.56;
+    state.projectiles.push({ id: `projectile-${type}`, type: "pea", row: 0, x: 292, y: 200, damage: state.zombies[0].maxHp * 0.03 });
+
+    updateGame(state, 1 / 60);
+
+    assert.equal(state.zombies[0].armorDropped, true, `${type} should enter armorDropped state`);
+    assert.equal(state.effects.some((effect) => effect.type === "armorDrop" && effect.hatType === type), true, `${type} should drop ${type} armor`);
+    const serialized = JSON.parse(serializeGameState(state));
+    const effect = serialized.entities.effects.find((candidate) => candidate.type === "armorDrop");
+    assert.equal(effect?.visualAsset, armorDropAssetFor(type));
+    assert.equal(effect?.animationSource, "image");
+  }
+});
+
 test("zamboni crushes plants instead of pausing to eat", () => {
   const state = createGameState();
   state.resources.zombie.brain = 300;
@@ -222,4 +275,19 @@ test("zamboni crushes plants instead of pausing to eat", () => {
   assert.equal(state.plants.length, 0);
   assert.equal(state.zombies[0].eating, false);
   assert.equal(state.audioEvents.some((event) => event.type === "zamboni"), true);
+});
+
+test("all playable zombie deaths serialize generated spritesheet assets", () => {
+  for (const type of Object.keys(ZOMBIES)) {
+    const state = createGameState();
+    state.started = true;
+    spawnZombie(state, type, 2, { x: 620 });
+    state.zombies[0].hp = 0;
+    updateGame(state, 1 / 60);
+
+    const serialized = JSON.parse(serializeGameState(state));
+    const deathEffect = serialized.entities.effects.find((effect) => effect.type === "zombieDeath");
+    assert.equal(deathEffect?.visualAsset, `generated-assets/sprites/zombies/${type}-death.png`);
+    assert.equal(deathEffect?.animationSource, "spritesheet");
+  }
 });

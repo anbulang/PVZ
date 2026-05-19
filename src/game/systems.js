@@ -1,6 +1,6 @@
-import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-studio1";
-import { drainCommandQueue, spawnZombie } from "./commands.js?v=20260512-studio1";
-import { nextId } from "./state.js?v=20260512-studio1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-versus1";
+import { drainCommandQueue } from "./commands.js?v=20260519-versus1";
+import { nextId } from "./state.js?v=20260519-versus1";
 
 export function updateGame(state, dt) {
   drainCommandQueue(state);
@@ -31,62 +31,35 @@ function updateResources(state, dt) {
     state.resources.plant.passiveSunClock -= ROUND.passiveSunInterval;
     createSunPickup(state, GRID.left + 100 + seededLane(state, 7) * 95, GRID.top - 10, ROUND.passiveSunAmount, "sky");
   }
-  const brainRate = state.time > ROUND.zombieRampTime ? 4.2 : 2.4;
-  state.resources.zombie.brain += brainRate * dt;
-  state.director.threat = Math.min(100, state.director.threat + dt * (state.time > ROUND.zombieRampTime ? 1.4 : 0.8));
+  state.resources.zombie.brain = Math.min(
+    ROUND.maxZombieBrain,
+    state.resources.zombie.brain + ROUND.zombieBrainPerSecond * dt,
+  );
 }
 
 function updateDirector(state, dt) {
-  if (state.director.warning) {
-    state.director.warning.remaining -= dt;
-    if (state.director.warning.remaining <= 0) {
-      const { row, zombieType } = state.director.warning;
-      spawnZombie(state, zombieType, row, { x: GRID.deployLeft + 78 });
-      state.audioEvents.push({ type: "zombieSpawn" });
-      state.director.warning = null;
-      state.director.waveCount += 1;
-      state.director.threat = Math.max(0, state.director.threat - 18);
-      state.status = `第 ${state.director.waveCount} 波：${ZOMBIES[zombieType].name} 入场。`;
-    }
-    return;
-  }
-
-  state.director.waveClock -= dt;
-  if (state.director.waveClock <= 0) {
-    const row = choosePressureLane(state);
-    const zombieType = chooseDirectorZombie(state);
-    state.director.warning = { row, zombieType, remaining: ROUND.waveWarning };
-    state.audioEvents.push({ type: "wave" });
-    state.director.waveClock = Math.max(8, ROUND.waveEvery - state.director.waveCount * 0.9);
-    state.status = `第 ${state.director.waveCount + 1} 波预警：第 ${row + 1} 路有 ${ZOMBIES[zombieType].name}。`;
-  }
-}
-
-function chooseDirectorZombie(state) {
-  if (state.time > 95 && state.director.waveCount % 4 === 3) return "bucket";
-  if (state.time > 55 && state.director.waveCount % 3 === 2) return "cone";
-  if (state.time > 35 && state.director.waveCount % 3 === 1) return "runner";
-  if (state.director.waveCount % 2 === 1) return "imp";
-  return "basic";
-}
-
-function choosePressureLane(state) {
-  if (state.plants.length === 0) return seededLane(state, state.director.waveCount + 3);
-  const scores = Array.from({ length: GRID.rows }, (_, row) => {
-    const plants = state.plants.filter((plant) => plant.row === row);
-    const zombies = state.zombies.filter((zombie) => zombie.row === row);
-    const rightmostPlant = plants.reduce((rightmost, plant) => Math.max(rightmost, plant.col), -1);
-    return {
-      row,
-      score: plants.length * 10 + rightmostPlant * 1.5 - zombies.length * 4,
-    };
-  });
-  scores.sort((a, b) => b.score - a.score || a.row - b.row);
-  return scores[0].row;
+  state.director.autoWaves = false;
+  state.director.warning = null;
+  state.director.waveClock = 0;
+  const target = calculateVersusPressure(state);
+  const smoothing = Math.min(1, dt * 3);
+  state.director.threat += (target - state.director.threat) * smoothing;
 }
 
 function seededLane(state, salt) {
   return Math.abs(Math.floor(Math.sin(state.time * 1.7 + salt * 9.31) * 1000)) % GRID.rows;
+}
+
+function calculateVersusPressure(state) {
+  const boardSpan = GRID.deployLeft - GRID.left;
+  const bankedBrain = Math.min(18, state.resources.zombie.brain / 22);
+  const liveZombiePressure = state.zombies.reduce((total, zombie) => {
+    const hpRatio = Math.max(0, Math.min(1, zombie.hp / zombie.maxHp));
+    const advance = Math.max(0, Math.min(1, (GRID.deployLeft - zombie.x) / boardSpan));
+    const rowStack = state.zombies.filter((other) => other.row === zombie.row).length - 1;
+    return total + 9 + hpRatio * 11 + advance * 22 + rowStack * 3;
+  }, 0);
+  return Math.max(0, Math.min(100, bankedBrain + liveZombiePressure));
 }
 
 function updateSunPickups(state, dt) {
@@ -136,11 +109,14 @@ function updatePlantActions(state, dt) {
     plant.actionClock += dt;
     plant.flash = Math.max(0, plant.flash - dt);
     plant.bitePulse = Math.max(0, plant.bitePulse - dt);
+    plant.visualTimer = Math.max(0, (plant.visualTimer ?? 0) - dt);
+    if (plant.visualTimer === 0) plant.visualState = null;
     const config = PLANTS[plant.type];
     if (config.armTime && !plant.armed && plant.actionClock >= config.armTime) {
       plant.armed = true;
       plant.actionClock = 0;
       plant.flash = 0.18;
+      setPlantVisual(plant, "armed", 0.35);
       state.status = `${config.name} 已准备。`;
     }
     if (config.armTime && plant.armed) {
@@ -153,6 +129,7 @@ function updatePlantActions(state, dt) {
     }
     if (config.produceEvery && plant.actionClock >= config.produceEvery) {
       plant.actionClock = 0;
+      setPlantVisual(plant, "produce", 0.55);
       createSunPickup(state, cellCenterX(plant.col) + 34, rowCenterY(plant.row) - 82, config.produceAmount);
       state.effects.push({ id: nextId(state, "effect"), type: "sunPop", row: plant.row, col: plant.col, ttl: 0.8 });
       state.audioEvents.push({ type: "grow" });
@@ -163,6 +140,7 @@ function updatePlantActions(state, dt) {
     }
     if (config.fireEvery && plant.actionClock >= config.fireEvery && hasZombieAhead(state, plant)) {
       plant.actionClock = 0;
+      setPlantVisual(plant, "attack", 0.28);
       const burstCount = config.burstCount ?? 1;
       for (let index = 0; index < burstCount; index += 1) {
         state.projectiles.push({
@@ -217,7 +195,7 @@ function updateProjectiles(state, dt) {
       state.effects.push({ id: nextId(state, "effect"), type: "hit", x: projectile.x, y: projectile.y, ttl: 0.25 });
       state.audioEvents.push({ type: "hit" });
     }
-    if (projectile.x > GRID.deployLeft + 140) projectile.remove = true;
+    if (projectile.x > GRID.deployLeft + GRID.deployWidth + 18) projectile.remove = true;
   }
   state.projectiles = state.projectiles.filter((projectile) => !projectile.remove);
 }
@@ -251,6 +229,7 @@ function updateZombies(state, dt) {
       blocker.hp -= config.biteDps * dt;
       blocker.flash = 0.1;
       blocker.bitePulse = 0.16;
+      setPlantVisual(blocker, "damaged", 0.18);
       if (config.crushPlant) {
         blocker.hp = 0;
         zombie.eating = false;
@@ -267,6 +246,12 @@ function updateZombies(state, dt) {
       zombie.x -= config.speed * slowFactor * chargeFactor * dt;
     }
   }
+}
+
+function setPlantVisual(plant, visualState, duration) {
+  plant.visualState = visualState;
+  plant.visualTimer = Math.max(plant.visualTimer ?? 0, duration);
+  plant.visualDuration = duration;
 }
 
 function maybeDropArmor(state, zombie) {
@@ -315,6 +300,8 @@ function cleanupDeadEntities(state) {
         zombieType: zombie.type,
         x: zombie.x,
         y: rowCenterY(zombie.row),
+        anchor: "ground",
+        motion: "fall-down",
         ttl: 1.05,
         maxTtl: 1.05,
       });

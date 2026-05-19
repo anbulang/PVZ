@@ -1,5 +1,5 @@
-import { GRID, PLANTS, ZOMBIES } from "./config.js?v=20260512-studio1";
-import { nextId, resetGameState } from "./state.js?v=20260512-studio1";
+import { GRID, PLANTS, ZOMBIES } from "./config.js?v=20260519-versus1";
+import { nextId, resetGameState } from "./state.js?v=20260519-versus1";
 
 export function enqueueCommand(state, command) {
   state.commandQueue.push(command);
@@ -41,8 +41,27 @@ export function applyCommand(state, command) {
 }
 
 function selectCard(state, command) {
-  state.selection = { side: command.side, kind: command.kind, type: command.unitType };
   const config = command.side === "plant" ? PLANTS[command.unitType] : ZOMBIES[command.unitType];
+  if (!config && command.kind !== "shovel") {
+    state.selection = null;
+    state.status = "未知卡牌。";
+    return;
+  }
+  if (command.kind !== "shovel") {
+    const resource = command.side === "plant" ? state.resources.plant.sun : state.resources.zombie.brain;
+    const cooldown = state.cards[command.side]?.[command.unitType]?.cooldownRemaining ?? 0;
+    if (resource < config.cost) {
+      state.selection = null;
+      state.status = command.side === "plant" ? "阳光不足，无法选择植物。" : "脑力不足，无法选择僵尸。";
+      return;
+    }
+    if (cooldown > 0) {
+      state.selection = null;
+      state.status = command.side === "plant" ? "植物卡牌冷却中。" : "僵尸卡牌冷却中。";
+      return;
+    }
+  }
+  state.selection = { side: command.side, kind: command.kind, type: command.unitType };
   state.status = command.kind === "shovel" ? "已选择铲子。" : `已选择 ${config?.name ?? command.unitType}。`;
 }
 
@@ -67,10 +86,14 @@ function placePlant(state, command) {
     armed: !config.armTime,
     flash: 0,
     bitePulse: 0,
+    visualState: config.explodeAfter ? "activate" : null,
+    visualTimer: config.explodeAfter ?? 0,
+    visualDuration: config.explodeAfter ?? 0,
   });
   pushSunDeltaEffect(state, -config.cost);
   state.audioEvents.push({ type: "plant" });
   state.status = `${config.name} 已种植，消耗 ${config.cost} 阳光，剩余 ${Math.floor(state.resources.plant.sun)}。`;
+  clearSelectionIfMatching(state, "plant", command.plantType);
 }
 
 function shovelPlant(state, command) {
@@ -90,8 +113,13 @@ function deployZombie(state, command) {
   state.resources.zombie.brain -= config.cost;
   state.cards.zombie[command.zombieType].cooldownRemaining = config.cooldown;
   spawnZombie(state, command.zombieType, command.row);
+  state.director.autoWaves = false;
+  state.director.warning = null;
+  state.director.manualDeployCount = (state.director.manualDeployCount ?? 0) + 1;
+  state.director.threat = Math.min(100, state.director.threat + Math.max(8, config.cost / 8));
   if (command.zombieType === "zamboni") state.audioEvents.push({ type: "zamboni" });
-  state.status = `${config.name} 已投放。`;
+  state.status = `${config.name} 已投放，第 ${state.director.manualDeployCount} 次进攻。`;
+  clearSelectionIfMatching(state, "zombie", command.zombieType);
 }
 
 function collectSun(state, command) {
@@ -100,7 +128,6 @@ function collectSun(state, command) {
   state.resources.plant.sun += sun.amount;
   state.sunPickups = state.sunPickups.filter((pickup) => pickup.id !== command.id);
   state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, amount: sun.amount, ttl: 1.25, maxTtl: 1.25 });
-  pushSunDeltaEffect(state, sun.amount);
   state.audioEvents.push({ type: "collectSun" });
   state.status = `收集 ${sun.amount} 阳光，当前 ${Math.floor(state.resources.plant.sun)}。`;
 }
@@ -114,7 +141,6 @@ function collectAllSun(state) {
   for (const sun of pickups) {
     state.effects.push({ id: nextId(state, "effect"), type: "collectSun", x: sun.x, y: sun.y, amount: sun.amount, ttl: 1.0, maxTtl: 1.0 });
   }
-  pushSunDeltaEffect(state, total);
   state.audioEvents.push({ type: "collectSun" });
   state.status = `一键收集 ${total} 阳光，当前 ${Math.floor(state.resources.plant.sun)}。`;
 }
@@ -139,13 +165,19 @@ function setStatus(state, status) {
   state.status = status;
 }
 
+function clearSelectionIfMatching(state, side, type) {
+  if (state.selection?.side === side && state.selection?.type === type) {
+    state.selection = null;
+  }
+}
+
 export function spawnZombie(state, zombieType, row, options = {}) {
   const config = ZOMBIES[zombieType];
   state.zombies.push({
     id: nextId(state, "zombie"),
     type: zombieType,
     row,
-    x: options.x ?? GRID.deployLeft + 38,
+    x: options.x ?? GRID.deployLeft + GRID.deployWidth * 0.48,
     hp: config.hp,
     maxHp: config.hp,
     slowTimer: 0,

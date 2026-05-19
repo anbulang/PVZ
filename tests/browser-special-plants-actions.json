@@ -7,7 +7,7 @@
   ],
   "expect": {
     "allowNoLiveEntities": true,
-    "sceneAssetIncludes": "白天.jpg",
+    "sceneAssetIncludes": "day-lawn.png",
     "anyEffectType": "rowFire",
     "noDamageNumbers": true
   }

@@ -12,6 +12,6 @@
     "audioUnlocked": true,
     "musicActive": true,
     "anyCollectSunEffect": true,
-    "anyPositiveSunDelta": true
+    "noPositiveSunDelta": true
   }
 }

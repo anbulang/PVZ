@@ -9,9 +9,9 @@
     { "buttons": [], "advanceMs": 6500 }
   ],
   "expect": {
-    "sceneAssetIncludes": "白天.jpg",
-    "anyZombieVisualAssetIncludes": "铁门僵尸",
-    "anyPlantVisualAssetIncludes": "土豆地雷.gif",
+    "sceneAssetIncludes": "day-lawn.png",
+    "anyZombieVisualAssetIncludes": "screen",
+    "anyPlantVisualAssetIncludes": "torchwood",
     "anyProjectileType": "firepea",
     "noDamageNumbers": true
   }

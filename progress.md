@@ -189,3 +189,184 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `npm test`: PASS, 40 tests.
 - Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
 - Screenshot checked: midgame visible sun pickups dropped from six small overlapping items to four clearer pickups including a `50`, with combat lanes easier to read.
+
+## 2026-05-12 UI And Generated Sprite Remaster Pass
+
+- Generated a commit-friendly original asset set under `generated-assets/`, including the lawn scene, card/resource/status panels, sun/mower/shovel UI, projectiles, effects, plant sheets, and zombie walk/eat/death sheets.
+- Added `SPRITESHEET_MANIFEST` with frame size, frame count, fps, loop, and anchor metadata; Canvas now prefers generated PNG spritesheets and keeps the local `assets/...` GIF/PNG files as fallback.
+- Rebuilt the HUD into fixed slots for sun, plant cards, timer/pressure, brain, and zombie cards; card labels were removed from the cards, leaving icon + cost/cooldown only.
+- Added plant visual pulses for attack, production, activation, arming, and bite damage; zombies now report and render `animationSource: "spritesheet"` for walk/eat/death states.
+- Updated browser verification to measure spritesheet frame changes, and updated visual assertions to target generated assets.
+- Ran `npm test`: PASS, 42 tests.
+- Ran browser verification for normal, layout, visual assets, spritesheet animation, sun, feedback/eating, expanded units, special plants, and unit death: PASS with no missing assets or console errors.
+- Screenshot checked: ready overlay, opening placement, midgame sun/combat, eating/armor feedback, and explosion effect all render clearly at 1280x720.
+
+## 2026-05-12 Codex Imagegen Asset Remaster
+
+- Replaced the procedural placeholder art with Codex image-generated atlases for units, UI, plant animation strips, and zombie animation strips.
+- Added `generated-assets/source/` atlas records and `scripts/remaster-imagegen-assets.py` to remove chroma-key backgrounds, crop atlas cells, normalize sprite anchors, and rewrite the shipped PNG spritesheets.
+- Preserved the existing `SPRITESHEET_MANIFEST` contract, but bumped generated asset URLs with an imagegen cache version so the browser refreshes the new art.
+- Made disabled card overlays semi-transparent so icons remain readable when unaffordable or cooling down.
+- Ran `npm test`: PASS, 42 tests.
+- Ran browser verification for normal, layout, visual assets, spritesheet animation, sun, feedback/eating, expanded units, special plants, and unit death: PASS with no missing assets or console errors.
+- Browser frame-diff for the basic zombie spritesheet reported more than 3000 changed pixels, confirming the new sprite strips animate in Canvas.
+
+## 2026-05-13 Game Studio Layout Repair Pass
+
+- Replaced the stretched generated HUD/status/overlay panel images with stable Canvas-drawn boards so card slots, resource numbers, cooldowns, and modal text no longer depend on imperfect atlas crops.
+- Kept generated icons, cards, mowers, sun, projectiles, and spritesheets, but moved the large generated UI panels to manifest/fallback use only.
+- Added a visible left-side house facade behind the mower bays, including roof trim, siding, windows, and a door, so the board again reads as plants defending the house.
+- Reworked mower bays into semi-transparent garage slots, keeping each mower aligned with its lane while letting the house context remain visible.
+- Rebuilt resource counters, timer, pressure meter, status bar, and ready/pause modal as fixed-size text-safe slots.
+- Ran `npm test`: PASS, 42 tests.
+- Ran browser verification for layout, visual assets, spritesheet frame-diff, feedback/eating, and unit-state scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: ready overlay, normal play HUD, left-side house/mower lane, sun value pickup, walking zombie, and cone zombie eating feedback are readable at 1280x720.
+
+## 2026-05-13 Game Studio Alignment Polish Pass
+
+- Generated a new Codex-image house/backyard strip and saved the shipped crop as `generated-assets/scene/house-left.png`.
+- Replaced the hand-drawn left house facade with the generated house strip, then constrained it to the mower lane so it no longer bleeds into the first lawn column.
+- Added `generated-assets/ui/sun-padded.png` and routed the sun icon through it so sun rays are not clipped in counters or pickups.
+- Moved the brain counter out of the zombie card board and aligned timer/pressure boxes as a clean vertical pair.
+- Moved the zombie card board to the right card cluster only, removing the large empty box behind the brain counter.
+- Re-anchored plant and zombie sprites to their cell floor instead of center points, fixing the visible mismatch between sprites and grid tiles.
+- Prevented unaffordable plant/zombie cards and cooling cards from becoming selected at the command layer.
+- Added regression coverage for unaffordable plant selection and included the new house/sun assets in asset and browser verification checks.
+- Ran `npm test`: PASS, 43 tests.
+- Ran browser verification for layout, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: unaffordable repeater click leaves selection empty, the generated house stays behind the mower lane, sun pickups render complete, and row sprites sit on tile baselines.
+
+## 2026-05-13 Game Studio Second Alignment Audit
+
+- Re-audited the eight remaining visual complaints with custom browser screenshots for all plants, all playable zombies, death effects, low-sun selection, and the normal layout.
+- Regenerated `generated-assets/scene/house-left.png` with a cleaner Codex-image house/path/grass strip inspired by the original backyard composition, removing the previous stacked garage-panel look.
+- Shifted the grass grid to `x=136`, narrowed cells to `100px`, and moved the deploy zone to `x=1050` so the generated house has enough width and no longer fights the first lawn column.
+- Removed the heavy mower bay panels; mower lanes now sit on the generated stone path with only subtle separators.
+- Moved plant and zombie anchors further upward inside each tile so sprites no longer sit below the grid baseline.
+- Compressed the brain counter and made the timer/pressure panels equal-width/equal-height, aligned as a neat vertical pair.
+- Forced all zombie death animation paths to generated spritesheets only, with a regression test to prevent fallback to legacy GIF death assets.
+- Ran `npm test`: PASS, 44 tests.
+- Ran browser verification for layout, visual assets, unit states, expanded units, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: all playable zombies are complete in cards and on the field, death effects serialize generated `*-death.png`, sun icon rays are intact, and low-sun repeater click leaves `selection: null`.
+
+## 2026-05-13 Card/HUD Fit And Old-Asset Sweep
+
+- Tightened plant and zombie card composition so unit art stays in the upper card area and the cost chip stays in the lower slot.
+- Collapsed timer, brain, and pressure into one aligned center column; the brain value no longer occupies a large empty HUD box.
+- Removed plant and zombie health bars from field rendering, matching the no-damage-number readability direction.
+- Rebuilt the shipped sun and mower icons as padded generated PNGs so sun rays and mower wheels are not clipped.
+- Kept the improved generated house/path strip and verified mowers sit on the left path without covering the lawn grid.
+- Re-ran the all-zombie browser sweep: all 8 playable zombies use generated walk/drive spritesheets, and all death effects serialize generated `*-death.png` assets.
+- Ran `npm test`: PASS, 44 tests.
+- Ran browser verification for layout, feedback/eating, visual assets, unit states, expanded units, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: `game-studio-layout4-layout.png`, `game-studio-layout4-feedback.png`, `game-studio-layout4-all-units.png`, `game-studio-layout4-unaffordable.png`, and `game-studio-layout4-death.png`.
+
+## 2026-05-13 Screenshot Annotation Fix Pass
+
+- Replaced the generated smiley sun with the original PVZ-style sun GIF, repacked as `generated-assets/ui/sun-original-padded.gif` with transparent margin so rays are not clipped.
+- Replaced the opaque generated selected-card overlay with a Canvas-drawn highlight stroke, keeping selected unit art visible.
+- Narrowed and re-centered the zombie deployment strip, then aligned manual/director spawn positions and projectile cleanup with the new `GRID.deployWidth`.
+- Moved the zombie card rail left so the top HUD no longer leaves a large empty gap between the status column and zombie cards.
+- Removed the permanent small controls line from the bottom status bar during active play, leaving one readable status line.
+- Reduced dropped armor size and moved it down to the tile floor so it no longer covers plants or zombie bodies.
+- Slightly reduced field zombie sprite sizes and changed card scaling to fit each zombie within its card frame.
+- Ran `npm test`: PASS, 44 tests.
+- Ran browser verification for layout, visual assets, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
+- Screenshot checked: `game-studio-layout5-layout.png`, `game-studio-layout5-feedback.png`, `game-studio-layout5-all-units.png`, and `game-studio-layout5-annotated-match.png`.
+
+## 2026-05-14 Code Review Fix Pass
+
+- Requested an independent Superpowers code review for the current visual/spritesheet worktree.
+- Fixed the critical review finding: successful plant placement and zombie deployment now clear the matching selected card so cooling or newly unaffordable cards cannot remain visually selected.
+- Added unit regressions for clearing selected plant/zombie cards after successful spend/cooldown.
+- Added browser verification support for `selectionNull` and enabled it in layout/visual-asset flows.
+- Added `/assets` to `.gitignore` so the local absolute symlink to the user's asset pack cannot be committed accidentally.
+- Documented hand-authored generated assets in `scripts/remaster-imagegen-assets.py`, added output validation, and added `requirements.txt` for Pillow.
+- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
+- Ran `npm test`: PASS, 46 tests.
+- Ran browser verification for layout, visual assets, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
+
+## 2026-05-15 Single Sun Collection Feedback Fix
+
+- Root cause: collecting one sun created both a `collectSun` effect and a positive `sunDelta` effect, so the same `+25` could render twice.
+- Added a failing regression for one sun pickup producing exactly one positive amount feedback, confirmed it failed with `2 !== 1`.
+- Removed positive `sunDelta` effects from `collectSun` and `collectAllSun`; plant spending still uses negative `sunDelta` for cost feedback.
+- Updated browser sun verification to require no positive `sunDelta` during collection.
+- Ran `npm test`: PASS, 47 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS with no missing assets or console errors.
+- Ran a targeted Playwright check for one pickup: PASS, state had exactly one positive `collectSun +25` effect and no positive `sunDelta`; screenshot saved as `test-results/single-sun-collect.png`.
+
+## 2026-05-16 Zombie Death Asset Sweep
+
+- Root cause: `scripts/remaster-imagegen-assets.py` still generated zombie death strips through the old generic `transformed_frames(..., "death")` path, so several death animations looked like procedural fades instead of Codex-generated character art.
+- Rebuilt all playable zombie death strips from Codex imagegen atlas frames or Codex static zombie crops using `death_frames_from_codex_art`, with drop pieces, collapse, dust, and remains frames.
+- Forced `ASSET_PATHS.zombieDeath` to generated spritesheet paths only and added tests blocking legacy GIF fallback and the old transformed-death generator path.
+- Added a system regression that kills every playable zombie type and verifies serialized `zombieDeath` effects point to `generated-assets/sprites/zombies/<type>-death.png` with `animationSource: "spritesheet"`.
+- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
+- Ran `npm test`: PASS, 49 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-unit-states-actions.json`: PASS with `basic-death.png`, no missing assets, and no console errors.
+- Screenshot/contact sheet checked: `test-results/death-sheets-contact-v2.png` and `test-results/all-zombie-death-runtime.png` show all eight zombie death sheets using Codex art-derived frames rather than the old one-size-fits-all fade.
+
+## 2026-05-16 Cone Armor Drop Fix
+
+- Root cause: `generated-assets/fx/armor-cone.png` was cropped from the same atlas area as `armor-bucket.png`, so road-cone armor loss displayed a broken bucket-like piece.
+- Rebuilt `armor-cone.png` from the Codex-generated cone zombie hat crop, rotated it into a fallen piece, added chip/crack detail, and kept bucket/screen/runner armor assets separate.
+- Added asset coverage so cone armor and bucket armor cannot be byte-identical again.
+- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
+- Ran `npm test`: PASS, 50 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS with no missing assets and no console errors.
+- Screenshot checked: `test-results/local-versus-game.png` shows cone zombie armor loss leaving a broken orange cone piece near the zombie instead of a bucket fragment.
+
+## 2026-05-17 Full Armor Drop Audit
+
+- Generalized the prior cone fix across every armor-dropping zombie: cone, bucket, screen-door, and runner.
+- Root cause found for runner: `armor-runner.png` also reused the bucket crop in `scripts/remaster-imagegen-assets.py`, so football zombies could drop a bucket-like fragment.
+- Rebuilt `armor-runner.png` from the Codex-generated football helmet crop, masked out the zombie face/background, rotated it into a fallen helmet, and added crack detail.
+- Centralized runtime armor-drop asset lookup with `armorDropAssetFor()` and serialized armor-drop `visualAsset` in `render_game_to_text()` so future browser checks can prove the exact asset path.
+- Strengthened tests: all four armor-drop assets must be distinct, and each armored zombie must emit its matching `hatType` and matching serialized asset path.
+- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
+- Ran `npm test`: PASS, 51 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS with no missing assets and no console errors.
+- Screenshot/contact sheet checked: `test-results/armor-drop-contact.png` and `test-results/all-armor-drops-runtime.png` show broken cone, bucket, screen-door, and football helmet as separate pieces.
+
+## 2026-05-17 HUD Card Area Rebalance
+
+- Applied the Game Studio UI pass to rebalance the top HUD: shovel moved into a separate far-left tool slot under the sun counter, plant card board narrowed from the old wide rail, and zombie card board expanded into the freed right-side space.
+- Centralized HUD rects in `src/game/input.js` so rendered panels, click hitboxes, and layout tests share one coordinate source.
+- Reworked the center status column: timer and brain counters now sit as compact aligned chips above a wider pressure meter.
+- Enlarged zombie card hitboxes and card art scale so the zombie selection side reads as a first-class control surface instead of a small cramped rail.
+- Updated browser click scenarios for the new zombie-card position.
+- Ran `npm test`: PASS, 51 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-layout-actions.json`: PASS with no missing assets and no console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-assets-actions.json`: PASS with no missing assets and no console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, confirming plant selection, placement, zombie selection, and deployment still work.
+- Screenshot checked: `test-results/local-versus-game.png` shows the smaller plant board, left shovel tool slot, compact timer/brain/pressure column, and larger zombie board.
+
+## 2026-05-18 Visual Polish Verification
+
+- Lowered 小鬼僵尸 brain cost to `40` and verified the command-layer balance regression.
+- Locked HUD hit boxes and drawing to the same layout contract: left tool shelf, compact plant panel, aligned timer/brain/pressure column, and larger zombie card panel.
+- Added generated-asset coverage for the visual polish pass, including padded sun, brain counter, house strip, mower, repeater, armor drops, and generated zombie death sheets.
+- Changed zombie death effects to stay ground-anchored and fall downward instead of moving upward.
+- Added multi-window browser verification actions for 1280x720, 1440x900, and a larger viewport, with logical Canvas click scaling.
+- Ran `npm test`: PASS, 59 tests.
+- Ran `git diff --check`: PASS.
+- Ran browser verification for normal, layout, visual assets, unit states, sun, feedback/eating, expanded units, special plants, and spritesheet frame-diff scenarios: PASS with no missing assets and no console errors.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-1280-actions.json`: PASS, screenshot `test-results/visual-polish-1280.png`.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-1440-actions.json`: PASS, screenshot `test-results/visual-polish-1440.png`.
+- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-large-actions.json`: PASS, screenshot `test-results/visual-polish-large.png`.
+- Screenshot checked: sun icon is complete, shovel sits in its tool slot, timer/brain/pressure are aligned, zombie deploy lane matches the five grass rows, house and mowers stay left of the lawn, and the basic zombie walk animation reports `changedPixels: 3000`.
+- Still open for a later gameplay design pass: remove automatic zombie waves, redesign full two-player versus economy, and rebalance plants so the plant side cannot win too quickly.
+
+## 2026-05-19 Local Versus Rules Pass
+
+- Added Chinese design and implementation notes for the local-versus rule pass under `docs/superpowers/specs/` and `docs/superpowers/plans/`.
+- Changed director behavior from automatic zombie waves to a pressure-only model: `autoWaves: false`, no warning, no automatic `spawnZombie()`.
+- Manual zombie deployment now increments `director.manualDeployCount`, clears warning state, and nudges the pressure meter.
+- Zombie brain now regenerates continuously at a fixed local-versus rate and is capped by `ROUND.maxZombieBrain`.
+- Browser verification now supports `directorAutoWaves`, `maxWaveCount`, and `minManualDeployCount` expectations.
+- Ran `npm test`: PASS, 60 tests.
+- Ran `git diff --check`: PASS.
+- Ran browser verification for normal, layout, visual-polish, sun, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets and no console errors.
+- Normal browser state confirmed `autoWaves: false`, `manualDeployCount: 1`, `waveCount: 0`, and one manually deployed walking zombie.
+- Still open for the next gameplay pass: deeper plant/zombie balance tuning and clearer two-player turn/role prompts in the HUD.

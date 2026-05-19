@@ -1,11 +1,12 @@
 export const GRID = {
   rows: 5,
   cols: 9,
-  left: 110,
+  left: 136,
   top: 160,
-  cellWidth: 104,
+  cellWidth: 100,
   cellHeight: 86,
-  deployLeft: 1060,
+  deployLeft: 1044,
+  deployWidth: 126,
 };
 
 export const CANVAS = {
@@ -19,6 +20,8 @@ export const ROUND = {
   passiveSunInterval: 8,
   passiveSunAmount: 25,
   zombieRampTime: 60,
+  zombieBrainPerSecond: 4.8,
+  maxZombieBrain: 500,
   waveEvery: 18,
   waveWarning: 3,
 };

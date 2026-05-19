@@ -6,8 +6,8 @@
   ],
   "expect": {
     "allowNoLiveEntities": true,
-    "anyZombieVisualAssetIncludes": "普通僵尸走路.gif",
-    "anyZombieAnimationSource": "gif",
+    "anyZombieVisualAssetIncludes": "basic-walk.png",
+    "anyZombieAnimationSource": "spritesheet",
     "gifFramePixelDiff": {
       "type": "basic",
       "waitMs": 800,

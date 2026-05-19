@@ -6,9 +6,9 @@
   ],
   "expect": {
     "allowNoLiveEntities": true,
-    "sceneAssetIncludes": "白天.jpg",
-    "uiAssetIncludes": "FlagMeterEmpty.png",
-    "anyZombieDeathAssetIncludes": "僵尸死.gif",
+    "sceneAssetIncludes": "day-lawn.png",
+    "uiAssetIncludes": "progress-empty.png",
+    "anyZombieDeathAssetIncludes": "basic-death.png",
     "noDamageNumbers": true
   }
 }

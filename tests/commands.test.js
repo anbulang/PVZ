@@ -23,6 +23,22 @@ test("invalid plant placement leaves state unchanged and sets status", () => {
   assert.match(state.status, /阳光不足/);
 });
 
+test("unaffordable plant cards cannot be selected", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "select", side: "plant", kind: "plant", unitType: "repeater" });
+  assert.equal(state.selection, null);
+  assert.match(state.status, /阳光不足/);
+});
+
+test("successful plant placement clears selected cooling card", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "select", side: "plant", kind: "plant", unitType: "peashooter" });
+  assert.deepEqual(state.selection, { side: "plant", kind: "plant", type: "peashooter" });
+  applyCommand(state, { type: "placePlant", plantType: "peashooter", row: 2, col: 1 });
+  assert.equal(state.selection, null);
+  assert.equal(state.cards.plant.peashooter.cooldownRemaining > 0, true);
+});
+
 test("zombie deployment spends brain and creates zombie", () => {
   const state = createGameState();
   applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 3 });
@@ -30,6 +46,15 @@ test("zombie deployment spends brain and creates zombie", () => {
   assert.equal(state.resources.zombie.brain, 50);
   assert.equal(state.zombies.length, 1);
   assert.equal(state.zombies[0].type, "basic");
+});
+
+test("successful zombie deployment clears selected cooling card", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "select", side: "zombie", kind: "zombie", unitType: "basic" });
+  assert.deepEqual(state.selection, { side: "zombie", kind: "zombie", type: "basic" });
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 3 });
+  assert.equal(state.selection, null);
+  assert.equal(state.cards.zombie.basic.cooldownRemaining > 0, true);
 });
 
 test("imp zombie is a fast low-cost pressure option", () => {
@@ -63,9 +88,20 @@ test("collecting sun pickup increases plant resources", () => {
   applyCommand(state, { type: "collectSun", id: "sun-test" });
   assert.equal(state.resources.plant.sun, 175);
   assert.equal(state.sunPickups.length, 0);
-  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount === 25), true);
+  assert.equal(state.effects.some((effect) => effect.type === "collectSun" && effect.amount === 25), true);
+  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount > 0), false);
   assert.match(state.status, /当前 175/);
   assert.equal(state.audioEvents.some((event) => event.type === "collectSun"), true);
+});
+
+test("collecting one sun pickup creates one positive amount feedback", () => {
+  const state = createGameState();
+  state.sunPickups.push({ id: "sun-test", x: 200, y: 200, amount: 25, ttl: 10 });
+  applyCommand(state, { type: "collectSun", id: "sun-test" });
+  const positiveFeedback = state.effects.filter((effect) => effect.amount > 0);
+  assert.equal(positiveFeedback.length, 1);
+  assert.equal(positiveFeedback[0].type, "collectSun");
+  assert.equal(positiveFeedback[0].amount, 25);
 });
 
 test("collect all sun picks up visible sun in one action", () => {
@@ -75,6 +111,7 @@ test("collect all sun picks up visible sun in one action", () => {
   applyCommand(state, { type: "collectAllSun" });
   assert.equal(state.resources.plant.sun, 225);
   assert.equal(state.sunPickups.length, 0);
-  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount === 75), true);
+  assert.equal(state.effects.filter((effect) => effect.type === "collectSun" && effect.amount > 0).length, 2);
+  assert.equal(state.effects.some((effect) => effect.type === "sunDelta" && effect.amount > 0), false);
   assert.match(state.status, /一键收集 75 阳光，当前 225/);
 });

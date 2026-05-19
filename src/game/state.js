@@ -1,5 +1,5 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260512-studio1";
-import { ASSET_MANIFEST, ASSET_PATHS, primaryAssetPath, zombieVisualFor } from "./assets.js?v=20260512-studio1";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-versus1";
+import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-versus1";
 
 export function createGameState() {
   return {
@@ -25,6 +25,8 @@ export function createGameState() {
     audioEvents: [],
     laneMowers: Array.from({ length: GRID.rows }, (_, row) => ({ row, available: true, active: false, x: GRID.left - 58 })),
     director: {
+      autoWaves: false,
+      manualDeployCount: 0,
       waveClock: 6,
       warning: null,
       waveCount: 0,
@@ -64,29 +66,36 @@ export function serializeGameState(state) {
     selection: state.selection,
     status: state.status,
     entities: {
-      plants: state.plants.map((plant) => ({
-        id: plant.id,
-        type: plant.type,
-        row: plant.row,
-        col: plant.col,
-        hp: Math.ceil(plant.hp),
-        armed: Boolean(plant.armed),
-        visualState: plant.armed ? "armed" : "idle",
-        visualAsset: primaryAssetPath(plant.armed && ASSET_PATHS.plantArmed[plant.type] ? ASSET_PATHS.plantArmed[plant.type] : ASSET_PATHS.plantIdle[plant.type]),
-      })),
-      zombies: state.zombies.map((zombie) => ({
-        id: zombie.id,
-        type: zombie.type,
-        row: zombie.row,
-        x: Math.round(zombie.x),
-        hp: Math.ceil(zombie.hp),
-        slowed: zombie.slowTimer > 0,
-        eating: Boolean(zombie.eating),
-        armorDropped: Boolean(zombie.armorDropped),
-        visualState: zombieVisualFor(zombie).state,
-        visualAsset: zombieVisualFor(zombie).paths[0] ?? null,
-        animationSource: zombieVisualFor(zombie).animationSource,
-      })),
+      plants: state.plants.map((plant) => {
+        const visual = plantVisualFor(plant);
+        return {
+          id: plant.id,
+          type: plant.type,
+          row: plant.row,
+          col: plant.col,
+          hp: Math.ceil(plant.hp),
+          armed: Boolean(plant.armed),
+          visualState: visual.state,
+          visualAsset: primaryVisualPath(visual),
+          animationSource: visual.animationSource,
+        };
+      }),
+      zombies: state.zombies.map((zombie) => {
+        const visual = zombieVisualFor(zombie);
+        return {
+          id: zombie.id,
+          type: zombie.type,
+          row: zombie.row,
+          x: Math.round(zombie.x),
+          hp: Math.ceil(zombie.hp),
+          slowed: zombie.slowTimer > 0,
+          eating: Boolean(zombie.eating),
+          armorDropped: Boolean(zombie.armorDropped),
+          visualState: visual.state,
+          visualAsset: primaryVisualPath(visual),
+          animationSource: visual.animationSource,
+        };
+      }),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
       laneMowers: state.laneMowers.map((mower) => ({ row: mower.row, available: mower.available, active: mower.active, x: Math.round(mower.x) })),
@@ -95,7 +104,8 @@ export function serializeGameState(state) {
         x: Math.round(effect.x ?? 0),
         y: Math.round(effect.y ?? 0),
         amount: effect.amount ?? null,
-        visualAsset: effect.type === "zombieDeath" ? primaryAssetPath(ASSET_PATHS.zombieDeath[effect.zombieType] ?? ASSET_PATHS.zombieDeath.basic) : null,
+        visualAsset: effectVisualAsset(effect),
+        animationSource: effect.type === "zombieDeath" ? "spritesheet" : effect.type === "armorDrop" ? "image" : null,
       })),
     },
     visualAssets: {
@@ -109,10 +119,18 @@ export function serializeGameState(state) {
       },
     },
     director: {
+      autoWaves: state.director.autoWaves,
+      manualDeployCount: state.director.manualDeployCount,
       waveCount: state.director.waveCount,
       threat: Math.round(state.director.threat),
       warning: state.director.warning,
     },
     audio: globalThis.__audioDebug ? globalThis.__audioDebug() : { audioUnlocked: false, musicActive: false, musicPath: null },
   });
+}
+
+function effectVisualAsset(effect) {
+  if (effect.type === "zombieDeath") return primaryAssetPath(ASSET_PATHS.zombieDeath[effect.zombieType] ?? ASSET_PATHS.zombieDeath.basic);
+  if (effect.type === "armorDrop") return armorDropAssetFor(effect.hatType);
+  return null;
 }

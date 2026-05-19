@@ -3,12 +3,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { ASSET_PATHS } from "../src/game/assets.js";
 import { getAudioAssetPaths } from "../src/game/audio.js";
+import { GRID } from "../src/game/config.js";
 
 const url = process.argv[2] ?? "http://localhost:5173";
 const actionsPath = process.argv[3] ?? "tests/browser-actions.json";
 const actions = JSON.parse(fs.readFileSync(actionsPath, "utf8"));
 const requiredAssets = [
   ASSET_PATHS.scene.day[0],
+  ASSET_PATHS.scene.houseLeft[0],
+  ASSET_PATHS.ui.sun[0],
   ASSET_PATHS.ui.shop[0],
   ASSET_PATHS.ui.seedChooser[0],
   ASSET_PATHS.ui.sunCounter[0],
@@ -26,8 +29,9 @@ const requiredAssets = [
   ...Object.values(ASSET_PATHS.sfx).map((paths) => paths[0]),
 ];
 const missingAssets = requiredAssets.filter((assetPath) => !fs.existsSync(path.resolve(assetPath)));
+const viewport = actions.viewport ?? { width: 1280, height: 720 };
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const page = await browser.newPage({ viewport });
 const consoleErrors = [];
 
 page.on("console", (message) => {
@@ -41,7 +45,7 @@ await page.goto(url, { waitUntil: "networkidle" });
 
 for (const step of actions.steps) {
   if (step.buttons?.includes("left_mouse_button")) {
-    await page.mouse.click(step.mouse_x, step.mouse_y);
+    await clickCanvasLogical(page, step.mouse_x, step.mouse_y);
   }
   if (step.command) {
     await page.evaluate((command) => {
@@ -72,7 +76,11 @@ let gifFrameDiff = null;
 if (actions.expect?.gifFramePixelDiff) {
   gifFrameDiff = await measureGifFrameDiff(page, actions.expect.gifFramePixelDiff);
 }
-const screenshotPath = "test-results/local-versus-game.png";
+let deployOuterFrameDelta = null;
+if (actions.expect?.deployOuterFrameMaxAverageDelta !== undefined) {
+  deployOuterFrameDelta = await measureDeployOuterFrameDelta(page);
+}
+const screenshotPath = path.join("test-results", actions.screenshotName ?? "local-versus-game.png");
 fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
 await page.locator("#game").screenshot({ path: screenshotPath });
 await browser.close();
@@ -83,6 +91,7 @@ console.log(JSON.stringify({
   missingAssets,
   audioDebug,
   gifFrameDiff,
+  deployOuterFrameDelta,
   state,
 }, null, 2));
 
@@ -98,10 +107,22 @@ if (!actions.expect?.allowNoLiveEntities && ((state.entities?.plants?.length ?? 
 if (actions.expect?.minWaveCount !== undefined && (state.director?.waveCount ?? 0) < actions.expect.minWaveCount) {
   process.exitCode = 1;
 }
+if (actions.expect?.maxWaveCount !== undefined && (state.director?.waveCount ?? 0) > actions.expect.maxWaveCount) {
+  process.exitCode = 1;
+}
+if (actions.expect?.directorAutoWaves !== undefined && state.director?.autoWaves !== actions.expect.directorAutoWaves) {
+  process.exitCode = 1;
+}
+if (actions.expect?.minManualDeployCount !== undefined && (state.director?.manualDeployCount ?? 0) < actions.expect.minManualDeployCount) {
+  process.exitCode = 1;
+}
 if (actions.expect?.minSun !== undefined && (state.resources?.sun ?? 0) < actions.expect.minSun) {
   process.exitCode = 1;
 }
 if (actions.expect?.anyEating && !state.entities?.zombies?.some((zombie) => zombie.eating)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.selectionNull && state.selection !== null) {
   process.exitCode = 1;
 }
 if (actions.expect?.anyArmorDropped && !state.entities?.zombies?.some((zombie) => zombie.armorDropped)) {
@@ -126,6 +147,9 @@ if (actions.expect?.anyCollectSunEffect && !state.entities?.effects?.some((effec
   process.exitCode = 1;
 }
 if (actions.expect?.anyPositiveSunDelta && !state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount > 0)) {
+  process.exitCode = 1;
+}
+if (actions.expect?.noPositiveSunDelta && state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount > 0)) {
   process.exitCode = 1;
 }
 if (actions.expect?.anyNegativeSunDelta && !state.entities?.effects?.some((effect) => effect.type === "sunDelta" && effect.amount < 0)) {
@@ -173,6 +197,20 @@ if (actions.expect?.noDamageNumbers && state.entities?.effects?.some((effect) =>
 if (actions.expect?.gifFramePixelDiff && (gifFrameDiff?.changedPixels ?? 0) < (actions.expect.gifFramePixelDiff.minChangedPixels ?? 80)) {
   process.exitCode = 1;
 }
+if (
+  actions.expect?.deployOuterFrameMaxAverageDelta !== undefined
+  && (deployOuterFrameDelta?.averageDelta ?? Number.POSITIVE_INFINITY) > actions.expect.deployOuterFrameMaxAverageDelta
+) {
+  process.exitCode = 1;
+}
+
+async function clickCanvasLogical(page, x, y) {
+  const canvas = page.locator("#game");
+  const box = await canvas.boundingBox();
+  const size = await canvas.evaluate((element) => ({ width: element.width, height: element.height }));
+  if (!box) throw new Error("#game canvas not found");
+  await page.mouse.click(box.x + (x * box.width) / size.width, box.y + (y * box.height) / size.height);
+}
 
 async function measureGifFrameDiff(page, options) {
   const sampleRegion = async () => page.evaluate((opts) => {
@@ -180,7 +218,6 @@ async function measureGifFrameDiff(page, options) {
     const ctx = canvas.getContext("2d");
     const zombie = window.__gameState?.zombies?.find((candidate) => !opts.type || candidate.type === opts.type);
     if (!zombie) return null;
-    window.__gameState.paused = true;
     if (window.__gifTestX === undefined) window.__gifTestX = zombie.x;
     zombie.x = window.__gifTestX;
     const width = opts.width ?? 96;
@@ -193,11 +230,16 @@ async function measureGifFrameDiff(page, options) {
 
   await page.waitForTimeout(80);
   const before = await sampleRegion();
-  await page.waitForTimeout(options.waitMs ?? 750);
-  await page.evaluate(() => {
+  await page.evaluate((duration) => {
+    const state = window.__gameState;
+    if (!state) return;
+    const wasPaused = state.paused;
+    state.paused = false;
+    window.advanceTime?.(duration);
+    state.paused = wasPaused;
     const zombie = window.__gameState?.zombies?.[0];
     if (zombie && window.__gifTestX !== undefined) zombie.x = window.__gifTestX;
-  });
+  }, options.waitMs ?? 750);
   await page.waitForTimeout(80);
   const after = await sampleRegion();
   if (!before || !after) return { changedPixels: 0, reason: "missing zombie" };
@@ -210,4 +252,31 @@ async function measureGifFrameDiff(page, options) {
     if (delta > 24) changedPixels += 1;
   }
   return { changedPixels, region: { x: before.x, y: before.y, width: before.width, height: before.height } };
+}
+
+async function measureDeployOuterFrameDelta(page) {
+  return page.evaluate((grid) => {
+    const canvas = document.querySelector("#game");
+    const ctx = canvas.getContext("2d");
+    const startX = Math.round(grid.deployLeft + grid.deployWidth + 10);
+    const endX = Math.round(Math.min(canvas.width - 48, startX + 32));
+    const sampleX = Math.round(Math.min(canvas.width - 18, grid.deployLeft + grid.deployWidth + 70));
+    const startY = Math.round(grid.top + 20);
+    const endY = Math.round(grid.top + grid.rows * grid.cellHeight - 20);
+    let totalDelta = 0;
+    let samples = 0;
+    for (let y = startY; y <= endY; y += 12) {
+      const reference = ctx.getImageData(sampleX, y, 1, 1).data;
+      for (let x = startX; x <= endX; x += 8) {
+        const pixel = ctx.getImageData(x, y, 1, 1).data;
+        totalDelta += Math.abs(pixel[0] - reference[0]) + Math.abs(pixel[1] - reference[1]) + Math.abs(pixel[2] - reference[2]);
+        samples += 1;
+      }
+    }
+    return {
+      averageDelta: samples === 0 ? 0 : totalDelta / samples,
+      region: { x: startX, y: startY, width: endX - startX, height: endY - startY },
+      referenceX: sampleX,
+    };
+  }, GRID);
 }

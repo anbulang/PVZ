@@ -1,7 +1,14 @@
-import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260512-studio1";
-import { enqueueCommand } from "./commands.js?v=20260512-studio1";
+import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-versus1";
+import { enqueueCommand } from "./commands.js?v=20260519-versus1";
 
-export const SUN_COUNTER_RECT = { x: 18, y: 86, w: 84, h: 38 };
+export const SUN_COUNTER_RECT = { x: 18, y: 18, w: 132, h: 46 };
+export const SHOVEL_CARD_RECT = { id: "shovel", kind: "shovel", x: 42, y: 78, w: 82, h: 56 };
+export const PLANT_PANEL_RECT = { x: 160, y: 12, w: 430, h: 132 };
+export const STATUS_PANEL_RECT = { x: 606, y: 12, w: 178, h: 132 };
+export const TIMER_RECT = { x: 612, y: 18, w: 78, h: 42 };
+export const BRAIN_COUNTER_RECT = { x: 698, y: 18, w: 88, h: 42 };
+export const THREAT_PANEL_RECT = { x: 612, y: 72, w: 174, h: 58 };
+export const ZOMBIE_PANEL_RECT = { x: 798, y: 12, w: 460, h: 132 };
 
 export function attachInput(canvas, state) {
   canvas.addEventListener("click", (event) => {
@@ -85,7 +92,7 @@ export function gridCellFromPoint(point) {
 }
 
 export function deployLaneFromPoint(point) {
-  if (point.x < GRID.deployLeft || point.x > GRID.deployLeft + 150) return null;
+  if (point.x < GRID.deployLeft || point.x > GRID.deployLeft + GRID.deployWidth) return null;
   const row = Math.floor((point.y - GRID.top) / GRID.cellHeight);
   return row >= 0 && row < GRID.rows ? row : null;
 }
@@ -93,20 +100,19 @@ export function deployLaneFromPoint(point) {
 export function getPlantCardRects() {
   const ids = Object.keys(PLANTS);
   const cards = ids.map((id, index) => {
-    const col = index % 6;
-    const row = Math.floor(index / 6);
-    return { id, kind: "plant", x: 104 + col * 70, y: 18 + row * 54, w: 62, h: 50 };
+    const col = index % 5;
+    const row = Math.floor(index / 5);
+    return { id, kind: "plant", x: PLANT_PANEL_RECT.x + 14 + col * 82, y: 20 + row * 62, w: 66, h: 54 };
   });
-  const shovelIndex = ids.length;
-  cards.push({ id: "shovel", kind: "shovel", x: 104 + (shovelIndex % 6) * 70, y: 18 + Math.floor(shovelIndex / 6) * 54, w: 62, h: 50 });
+  cards.push(SHOVEL_CARD_RECT);
   return cards;
 }
 
 export function getZombieCardRects() {
   return Object.keys(ZOMBIES).map((id, index) => {
-    const col = index % 6;
-    const row = Math.floor(index / 6);
-    return { id, x: 836 + col * 68, y: 18 + row * 54, w: 62, h: 50 };
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    return { id, x: ZOMBIE_PANEL_RECT.x + 18 + col * 108, y: 20 + row * 62, w: 82, h: 58 };
   });
 }
 

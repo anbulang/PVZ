@@ -1,18 +1,19 @@
 {
   "steps": [
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 135, "mouse_y": 43 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 210, "mouse_y": 49 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 266, "mouse_y": 374 },
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 872, "mouse_y": 47 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 854, "mouse_y": 47 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 1110, "mouse_y": 374 },
     { "buttons": [], "frames": 180 }
   ],
   "expect": {
     "audioUnlocked": true,
     "musicActive": true,
-    "sceneAssetIncludes": "白天.jpg",
-    "uiAssetIncludes": "SeedChooser_Background.png",
-    "anyZombieVisualAssetIncludes": "普通僵尸走路.gif",
-    "anyZombieAnimationSource": "gif",
+    "sceneAssetIncludes": "day-lawn.png",
+    "uiAssetIncludes": "panel-zombies.png",
+    "anyZombieVisualAssetIncludes": "basic-walk.png",
+    "anyZombieAnimationSource": "spritesheet",
+    "selectionNull": true,
     "noDamageNumbers": true
   }
 }
