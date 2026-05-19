@@ -370,3 +370,16 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran browser verification for normal, layout, visual-polish, sun, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets and no console errors.
 - Normal browser state confirmed `autoWaves: false`, `manualDeployCount: 1`, `waveCount: 0`, and one manually deployed walking zombie.
 - Still open for the next gameplay pass: deeper plant/zombie balance tuning and clearer two-player turn/role prompts in the HUD.
+
+## 2026-05-19 Balance and Versus Tempo Pass
+
+- Committed the previous visual and local-versus foundation before starting the balance pass: `02002e0 feat: add local versus visual and rule foundation`.
+- Slowed plant-side snowballing: passive sky sun cadence is now 10s, sunflowers and twin sunflowers produce less frequently, and core shooter damage was reduced.
+- Strengthened zombie-side sustained pressure: brain regeneration is faster, max brain is higher, and manual mixed deployments can earn a short-window combo brain refund.
+- Added zombie combo state to serialized debug output so browser checks can verify combo count, last deployed type, and row.
+- Added command/system/state regressions for combo refund, delayed passive sky sun, updated sunflower production cadence, and serialized zombie combo resources.
+- Added `tests/browser-versus-balance-actions.json` to verify two manual zombie deployments, combo refund, manual-only pressure, and spritesheet walking zombies in the browser.
+- Ran `npm test`: PASS, 62 tests.
+- Ran `git diff --check`: PASS.
+- Ran browser verification for normal, versus-balance, and visual-polish 1280 scenarios: PASS with no missing assets and no console errors.
+- In-app browser screenshot checked: `test-results/in-app-balance-check.png` opens at `http://localhost:5174/` with no console errors.

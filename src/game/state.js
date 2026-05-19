@@ -1,5 +1,5 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-versus1";
-import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-versus1";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-balance1";
+import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-balance1";
 
 export function createGameState() {
   return {
@@ -10,7 +10,10 @@ export function createGameState() {
     timer: { remaining: ROUND.duration },
     resources: {
       plant: { sun: INITIAL_RESOURCES.sun, passiveSunClock: 0 },
-      zombie: { brain: INITIAL_RESOURCES.brain },
+      zombie: {
+        brain: INITIAL_RESOURCES.brain,
+        combo: { count: 0, lastTime: null, lastType: null, lastRow: null },
+      },
     },
     cards: {
       plant: Object.fromEntries(Object.keys(PLANTS).map((id) => [id, { cooldownRemaining: 0 }])),
@@ -62,6 +65,11 @@ export function serializeGameState(state) {
     resources: {
       sun: Math.floor(state.resources.plant.sun),
       brain: Math.floor(state.resources.zombie.brain),
+      zombieCombo: {
+        count: state.resources.zombie.combo?.count ?? 0,
+        lastType: state.resources.zombie.combo?.lastType ?? null,
+        lastRow: state.resources.zombie.combo?.lastRow ?? null,
+      },
     },
     selection: state.selection,
     status: state.status,

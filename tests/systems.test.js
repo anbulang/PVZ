@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createGameState, serializeGameState } from "../src/game/state.js";
 import { applyCommand, spawnZombie } from "../src/game/commands.js";
 import { updateGame } from "../src/game/systems.js";
-import { ZOMBIES } from "../src/game/config.js";
+import { ROUND, ZOMBIES } from "../src/game/config.js";
 import { armorDropAssetFor } from "../src/game/assets.js";
 
 function step(state, seconds) {
@@ -15,16 +15,25 @@ test("cooldowns and resources advance over time", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 0, col: 0 });
   assert.equal(state.cards.plant.sunflower.cooldownRemaining > 0, true);
-  step(state, 8.1);
+  step(state, ROUND.passiveSunInterval + 0.1);
   assert.equal(state.cards.plant.sunflower.cooldownRemaining, 0);
   assert.equal(state.sunPickups.length >= 1, true);
   assert.equal(state.resources.zombie.brain > 100, true);
 });
 
+test("passive sky sun waits longer than the old early snowball cadence", () => {
+  const state = createGameState();
+  state.started = true;
+  step(state, 8.1);
+  assert.equal(state.sunPickups.some((sun) => sun.kind === "sky"), false);
+  step(state, ROUND.passiveSunInterval - 8.0);
+  assert.equal(state.sunPickups.some((sun) => sun.kind === "sky"), true);
+});
+
 test("sunflowers produce visible sun pickups with amounts", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 8.1);
+  step(state, 9.1);
   const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
   assert.equal(Boolean(producedSun), true);
   assert.equal(producedSun.amount, 25);
@@ -34,7 +43,7 @@ test("sunflowers produce visible sun pickups with amounts", () => {
 test("nearby sunflower sun pickups merge into a higher-value pickup", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 15.6);
+  step(state, 18.6);
   const produced = state.sunPickups.filter((sun) => sun.kind === "plant");
   assert.equal(produced.length, 1);
   assert.equal(produced[0].amount, 50);
@@ -44,7 +53,7 @@ test("twin sunflowers produce larger sun pickups", () => {
   const state = createGameState();
   state.resources.plant.sun = 250;
   applyCommand(state, { type: "placePlant", plantType: "twinSunflower", row: 2, col: 2 });
-  step(state, 8.7);
+  step(state, 10.2);
   const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
   assert.equal(Boolean(producedSun), true);
   assert.equal(producedSun.amount, 50);
@@ -82,7 +91,7 @@ test("shooters enter attack visual state when firing", () => {
 test("sunflowers enter produce visual state when creating sun", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 7.55);
+  step(state, 9.05);
   assert.equal(state.plants[0].visualState, "produce");
   assert.equal(state.sunPickups.some((sun) => sun.kind === "plant" && sun.amount === 25), true);
 });

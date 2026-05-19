@@ -1,7 +1,7 @@
-import { ASSET_PATHS, GENERATED_ASSET_PATHS, SPRITESHEET_MANIFEST, armorDropAssetFor, drawAsset, drawSpritesheet, getAsset, plantVisualFor, zombieVisualFor } from "./assets.js?v=20260519-versus1";
-import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-versus1";
-import { BRAIN_COUNTER_RECT, PLANT_PANEL_RECT, SUN_COUNTER_RECT, THREAT_PANEL_RECT, TIMER_RECT, ZOMBIE_PANEL_RECT, getPlantCardRects, getZombieCardRects } from "./input.js?v=20260519-versus1";
-import { cellCenterX, rowCenterY } from "./systems.js?v=20260519-versus1";
+import { ASSET_PATHS, GENERATED_ASSET_PATHS, SPRITESHEET_MANIFEST, armorDropAssetFor, drawAsset, drawSpritesheet, getAsset, plantVisualFor, zombieVisualFor } from "./assets.js?v=20260519-balance1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-balance1";
+import { BRAIN_COUNTER_RECT, PLANT_PANEL_RECT, SUN_COUNTER_RECT, THREAT_PANEL_RECT, TIMER_RECT, ZOMBIE_PANEL_RECT, getPlantCardRects, getZombieCardRects } from "./input.js?v=20260519-balance1";
+import { cellCenterX, rowCenterY } from "./systems.js?v=20260519-balance1";
 
 export function renderGame(ctx, state) {
   const { width, height } = ctx.canvas;

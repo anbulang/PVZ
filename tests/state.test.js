@@ -22,7 +22,11 @@ test("serializeGameState returns concise JSON for automation", () => {
   assert.equal(payload.mode, "playing");
   assert.equal(payload.started, false);
   assert.equal(payload.coordinateSystem, "origin top-left; x grows right; y grows down; grid row 0..4 top-bottom col 0..8 left-right");
-  assert.deepEqual(payload.resources, { sun: 150, brain: 100 });
+  assert.deepEqual(payload.resources, {
+    sun: 150,
+    brain: 100,
+    zombieCombo: { count: 0, lastType: null, lastRow: null },
+  });
   assert.equal(payload.entities.plants.length, 0);
   assert.equal(payload.entities.zombies.length, 0);
   assert.deepEqual(payload.audio, { audioUnlocked: false, musicActive: false, musicPath: null });

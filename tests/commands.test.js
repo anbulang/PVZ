@@ -65,6 +65,17 @@ test("imp zombie is a fast low-cost pressure option", () => {
   assert.equal(state.zombies[0].hp, 90);
 });
 
+test("mixed zombie deployments earn a combo brain refund", () => {
+  const state = createGameState();
+  applyCommand(state, { type: "deployZombie", zombieType: "basic", row: 2 });
+  state.time = 3;
+  applyCommand(state, { type: "deployZombie", zombieType: "imp", row: 3 });
+  assert.equal(state.resources.zombie.brain, 22);
+  assert.equal(state.resources.zombie.combo.count, 2);
+  assert.equal(state.director.manualDeployCount, 2);
+  assert.equal(state.status.includes("连携 x2"), true);
+});
+
 test("shovel removes an occupied plant cell", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 1, col: 1 });

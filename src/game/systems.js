@@ -1,6 +1,6 @@
-import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-versus1";
-import { drainCommandQueue } from "./commands.js?v=20260519-versus1";
-import { nextId } from "./state.js?v=20260519-versus1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-balance1";
+import { drainCommandQueue } from "./commands.js?v=20260519-balance1";
+import { nextId } from "./state.js?v=20260519-balance1";
 
 export function updateGame(state, dt) {
   drainCommandQueue(state);

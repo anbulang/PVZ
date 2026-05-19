@@ -1,5 +1,5 @@
-import { GRID, PLANTS, ZOMBIES } from "./config.js?v=20260519-versus1";
-import { nextId, resetGameState } from "./state.js?v=20260519-versus1";
+import { GRID, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-balance1";
+import { nextId, resetGameState } from "./state.js?v=20260519-balance1";
 
 export function enqueueCommand(state, command) {
   state.commandQueue.push(command);
@@ -116,10 +116,31 @@ function deployZombie(state, command) {
   state.director.autoWaves = false;
   state.director.warning = null;
   state.director.manualDeployCount = (state.director.manualDeployCount ?? 0) + 1;
-  state.director.threat = Math.min(100, state.director.threat + Math.max(8, config.cost / 8));
+  const comboCount = applyZombieCombo(state, command);
+  const comboBonus = comboCount > 1 ? comboCount * 4 : 0;
+  state.director.threat = Math.min(100, state.director.threat + Math.max(8, config.cost / 8) + comboBonus);
   if (command.zombieType === "zamboni") state.audioEvents.push({ type: "zamboni" });
-  state.status = `${config.name} 已投放，第 ${state.director.manualDeployCount} 次进攻。`;
+  const comboText = comboCount > 1 ? `，连携 x${comboCount} 返还 ${ROUND.zombieComboBrainRefund} 脑力` : "";
+  state.status = `${config.name} 已投放，第 ${state.director.manualDeployCount} 次进攻${comboText}。`;
   clearSelectionIfMatching(state, "zombie", command.zombieType);
+}
+
+function applyZombieCombo(state, command) {
+  const combo = state.resources.zombie.combo ?? { count: 0, lastTime: null, lastType: null, lastRow: null };
+  const lastTime = combo.lastTime ?? Number.NEGATIVE_INFINITY;
+  const withinWindow = state.time - lastTime <= ROUND.zombieComboWindow;
+  const variedDeployment = command.zombieType !== combo.lastType || command.row !== combo.lastRow;
+  const count = withinWindow && variedDeployment ? Math.min(ROUND.zombieComboMax, combo.count + 1) : 1;
+  if (count > 1) {
+    state.resources.zombie.brain = Math.min(ROUND.maxZombieBrain, state.resources.zombie.brain + ROUND.zombieComboBrainRefund);
+  }
+  state.resources.zombie.combo = {
+    count,
+    lastTime: state.time,
+    lastType: command.zombieType,
+    lastRow: command.row,
+  };
+  return count;
 }
 
 function collectSun(state, command) {

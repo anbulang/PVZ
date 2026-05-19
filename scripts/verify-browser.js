@@ -119,6 +119,12 @@ if (actions.expect?.minManualDeployCount !== undefined && (state.director?.manua
 if (actions.expect?.minSun !== undefined && (state.resources?.sun ?? 0) < actions.expect.minSun) {
   process.exitCode = 1;
 }
+if (actions.expect?.minBrain !== undefined && (state.resources?.brain ?? 0) < actions.expect.minBrain) {
+  process.exitCode = 1;
+}
+if (actions.expect?.minZombieComboCount !== undefined && (state.resources?.zombieCombo?.count ?? 0) < actions.expect.minZombieComboCount) {
+  process.exitCode = 1;
+}
 if (actions.expect?.anyEating && !state.entities?.zombies?.some((zombie) => zombie.eating)) {
   process.exitCode = 1;
 }

@@ -1,0 +1,18 @@
+{
+  "screenshotName": "versus-balance.png",
+  "steps": [
+    { "command": { "type": "setResources", "sun": 150, "brain": 100 }, "frames": 1 },
+    { "command": { "type": "placePlant", "plantType": "sunflower", "row": 2, "col": 1 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "basic", "row": 2 }, "frames": 2 },
+    { "command": { "type": "deployZombie", "zombieType": "imp", "row": 3 }, "frames": 10 }
+  ],
+  "expect": {
+    "directorAutoWaves": false,
+    "maxWaveCount": 0,
+    "minManualDeployCount": 2,
+    "minZombieComboCount": 2,
+    "minBrain": 22,
+    "anyZombieAnimationSource": "spritesheet",
+    "noDamageNumbers": true
+  }
+}
