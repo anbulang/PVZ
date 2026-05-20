@@ -1,17 +1,21 @@
 {
   "steps": [
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 68, "mouse_y": 70 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 210, "mouse_y": 49 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 266, "mouse_y": 374 },
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 160, "mouse_y": 70 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 296, "mouse_y": 49 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 370, "mouse_y": 374 },
-    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 915, "mouse_y": 70 },
+    { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 854, "mouse_y": 47 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 1110, "mouse_y": 374 },
     { "buttons": [], "frames": 520 },
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 266, "mouse_y": 360 },
     { "buttons": [], "frames": 120 }
   ],
   "expect": {
-    "minWaveCount": 1,
-    "minSun": 25
+    "audioUnlocked": true,
+    "musicActive": true,
+    "directorAutoWaves": false,
+    "maxWaveCount": 0,
+    "minManualDeployCount": 1,
+    "anyZombieVisualAssetIncludes": "basic-walk.png"
   }
 }

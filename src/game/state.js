@@ -1,14 +1,19 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-tempo1";
 
 export function createGameState() {
   return {
     mode: "playing",
+    started: false,
     grid: { rows: GRID.rows, cols: GRID.cols },
     time: 0,
     timer: { remaining: ROUND.duration },
     resources: {
       plant: { sun: INITIAL_RESOURCES.sun, passiveSunClock: 0 },
-      zombie: { brain: INITIAL_RESOURCES.brain },
+      zombie: {
+        brain: INITIAL_RESOURCES.brain,
+        combo: { count: 0, lastTime: null, lastType: null, lastRow: null },
+      },
     },
     cards: {
       plant: Object.fromEntries(Object.keys(PLANTS).map((id) => [id, { cooldownRemaining: 0 }])),
@@ -23,6 +28,8 @@ export function createGameState() {
     audioEvents: [],
     laneMowers: Array.from({ length: GRID.rows }, (_, row) => ({ row, available: true, active: false, x: GRID.left - 58 })),
     director: {
+      autoWaves: false,
+      manualDeployCount: 0,
       waveClock: 6,
       warning: null,
       waveCount: 0,
@@ -30,7 +37,7 @@ export function createGameState() {
     },
     commandQueue: [],
     nextEntityId: 1,
-    status: "植物方选择卡牌种植，僵尸方选择卡牌投放。",
+    status: `植物守满 ${ROUND.duration} 秒并清场获胜；僵尸突破左线获胜。`,
     paused: false,
     winner: null,
   };
@@ -49,37 +56,93 @@ export function nextId(state, prefix) {
 export function serializeGameState(state) {
   return JSON.stringify({
     mode: state.mode,
+    started: state.started,
     paused: state.paused,
     gameOver: Boolean(state.winner),
     winner: state.winner,
+    winCondition: {
+      plant: "守满倒计时并清空场上僵尸",
+      zombie: "突破左侧防线",
+    },
     coordinateSystem: "origin top-left; x grows right; y grows down; grid row 0..4 top-bottom col 0..8 left-right",
     timeRemaining: Number(state.timer.remaining.toFixed(2)),
     resources: {
       sun: Math.floor(state.resources.plant.sun),
       brain: Math.floor(state.resources.zombie.brain),
+      zombieCombo: {
+        count: state.resources.zombie.combo?.count ?? 0,
+        lastType: state.resources.zombie.combo?.lastType ?? null,
+        lastRow: state.resources.zombie.combo?.lastRow ?? null,
+      },
     },
     selection: state.selection,
     status: state.status,
     entities: {
-      plants: state.plants.map((plant) => ({ id: plant.id, type: plant.type, row: plant.row, col: plant.col, hp: Math.ceil(plant.hp) })),
-      zombies: state.zombies.map((zombie) => ({
-        id: zombie.id,
-        type: zombie.type,
-        row: zombie.row,
-        x: Math.round(zombie.x),
-        hp: Math.ceil(zombie.hp),
-        slowed: zombie.slowTimer > 0,
-        eating: Boolean(zombie.eating),
-        armorDropped: Boolean(zombie.armorDropped),
-      })),
+      plants: state.plants.map((plant) => {
+        const visual = plantVisualFor(plant);
+        return {
+          id: plant.id,
+          type: plant.type,
+          row: plant.row,
+          col: plant.col,
+          hp: Math.ceil(plant.hp),
+          armed: Boolean(plant.armed),
+          visualState: visual.state,
+          visualAsset: primaryVisualPath(visual),
+          animationSource: visual.animationSource,
+        };
+      }),
+      zombies: state.zombies.map((zombie) => {
+        const visual = zombieVisualFor(zombie);
+        return {
+          id: zombie.id,
+          type: zombie.type,
+          row: zombie.row,
+          x: Math.round(zombie.x),
+          hp: Math.ceil(zombie.hp),
+          slowed: zombie.slowTimer > 0,
+          eating: Boolean(zombie.eating),
+          armorDropped: Boolean(zombie.armorDropped),
+          visualState: visual.state,
+          visualAsset: primaryVisualPath(visual),
+          animationSource: visual.animationSource,
+        };
+      }),
       projectiles: state.projectiles.map((projectile) => ({ id: projectile.id, type: projectile.type, row: projectile.row, x: Math.round(projectile.x) })),
       sunPickups: state.sunPickups.map((sun) => ({ id: sun.id, x: Math.round(sun.x), y: Math.round(sun.y), amount: sun.amount })),
       laneMowers: state.laneMowers.map((mower) => ({ row: mower.row, available: mower.available, active: mower.active, x: Math.round(mower.x) })),
+      effects: state.effects.map((effect) => ({
+        type: effect.type,
+        x: Math.round(effect.x ?? 0),
+        y: Math.round(effect.y ?? 0),
+        amount: effect.amount ?? null,
+        visualAsset: effectVisualAsset(effect),
+        animationSource: effect.type === "zombieDeath" ? "spritesheet" : effect.type === "armorDrop" ? "image" : null,
+      })),
+    },
+    visualAssets: {
+      scene: primaryAssetPath(ASSET_MANIFEST.scene.day.paths),
+      ui: {
+        shop: primaryAssetPath(ASSET_MANIFEST.ui.shop.paths),
+        seedChooser: primaryAssetPath(ASSET_MANIFEST.ui.seedChooser.paths),
+        sunCounter: primaryAssetPath(ASSET_MANIFEST.ui.sunCounter.paths),
+        shovelSlot: primaryAssetPath(ASSET_MANIFEST.ui.shovelSlot.paths),
+        flagMeter: primaryAssetPath(ASSET_MANIFEST.ui.flagMeter.empty.paths),
+      },
     },
     director: {
+      autoWaves: state.director.autoWaves,
+      manualDeployCount: state.director.manualDeployCount,
       waveCount: state.director.waveCount,
       threat: Math.round(state.director.threat),
       warning: state.director.warning,
     },
+    audio: globalThis.__audioDebug ? globalThis.__audioDebug() : { audioUnlocked: false, musicActive: false, musicPath: null },
   });
+}
+
+function effectVisualAsset(effect) {
+  if (effect.type === "zombieDeath") return primaryAssetPath(ASSET_PATHS.zombieDeath[effect.zombieType] ?? ASSET_PATHS.zombieDeath.basic);
+  if (effect.type === "armorDrop") return armorDropAssetFor(effect.hatType);
+  return null;
 }

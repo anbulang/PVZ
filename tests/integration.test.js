@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createGameState, serializeGameState } from "../src/game/state.js";
 import { enqueueCommand } from "../src/game/commands.js";
 import { updateGame } from "../src/game/systems.js";
+import { ROUND } from "../src/game/config.js";
 
 test("command queue plus fixed ticks produces serializable gameplay", () => {
   const state = createGameState();
@@ -12,5 +13,5 @@ test("command queue plus fixed ticks produces serializable gameplay", () => {
   const payload = JSON.parse(serializeGameState(state));
   assert.equal(payload.entities.plants.length, 1);
   assert.equal(payload.entities.zombies.length, 1);
-  assert.equal(payload.timeRemaining < 180, true);
+  assert.equal(payload.timeRemaining < ROUND.duration, true);
 });

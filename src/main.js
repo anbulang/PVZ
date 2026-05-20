@@ -1,9 +1,9 @@
-import { enqueueCommand } from "./game/commands.js";
-import { processAudioEvents, unlockAudio } from "./game/audio.js";
-import { attachInput } from "./game/input.js";
-import { renderGame } from "./game/render.js";
-import { createGameState, serializeGameState } from "./game/state.js";
-import { updateGame } from "./game/systems.js";
+import { enqueueCommand } from "./game/commands.js?v=20260519-tempo1";
+import { getAudioDebugState, processAudioEvents, unlockAudio } from "./game/audio.js?v=20260519-tempo1";
+import { attachInput } from "./game/input.js?v=20260519-tempo1";
+import { renderGame } from "./game/render.js?v=20260519-tempo1";
+import { createGameState, serializeGameState } from "./game/state.js?v=20260519-tempo1";
+import { updateGame } from "./game/systems.js?v=20260519-tempo1";
 
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
@@ -40,6 +40,7 @@ window.advanceTime = (ms) => {
   renderGame(ctx, state);
 };
 window.render_game_to_text = () => serializeGameState(state);
+window.__audioDebug = () => getAudioDebugState();
 
 renderGame(ctx, state);
 requestAnimationFrame(frame);
