@@ -1,5 +1,5 @@
-import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-balance1";
-import { enqueueCommand } from "./commands.js?v=20260519-balance1";
+import { GRID, PLANTS, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { enqueueCommand } from "./commands.js?v=20260519-tempo1";
 
 export const SUN_COUNTER_RECT = { x: 18, y: 18, w: 132, h: 46 };
 export const SHOVEL_CARD_RECT = { id: "shovel", kind: "shovel", x: 42, y: 78, w: 82, h: 56 };

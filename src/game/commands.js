@@ -1,5 +1,5 @@
-import { GRID, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-balance1";
-import { nextId, resetGameState } from "./state.js?v=20260519-balance1";
+import { GRID, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { nextId, resetGameState } from "./state.js?v=20260519-tempo1";
 
 export function enqueueCommand(state, command) {
   state.commandQueue.push(command);

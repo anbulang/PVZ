@@ -1,7 +1,7 @@
-import { ASSET_PATHS, GENERATED_ASSET_PATHS, SPRITESHEET_MANIFEST, armorDropAssetFor, drawAsset, drawSpritesheet, getAsset, plantVisualFor, zombieVisualFor } from "./assets.js?v=20260519-balance1";
-import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-balance1";
-import { BRAIN_COUNTER_RECT, PLANT_PANEL_RECT, SUN_COUNTER_RECT, THREAT_PANEL_RECT, TIMER_RECT, ZOMBIE_PANEL_RECT, getPlantCardRects, getZombieCardRects } from "./input.js?v=20260519-balance1";
-import { cellCenterX, rowCenterY } from "./systems.js?v=20260519-balance1";
+import { ASSET_PATHS, GENERATED_ASSET_PATHS, SPRITESHEET_MANIFEST, armorDropAssetFor, drawAsset, drawSpritesheet, getAsset, plantVisualFor, zombieVisualFor } from "./assets.js?v=20260519-tempo1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { BRAIN_COUNTER_RECT, PLANT_PANEL_RECT, SUN_COUNTER_RECT, THREAT_PANEL_RECT, TIMER_RECT, ZOMBIE_PANEL_RECT, getPlantCardRects, getZombieCardRects } from "./input.js?v=20260519-tempo1";
+import { cellCenterX, rowCenterY } from "./systems.js?v=20260519-tempo1";
 
 export function renderGame(ctx, state) {
   const { width, height } = ctx.canvas;
@@ -210,7 +210,9 @@ function drawResourceCounter(ctx, paths, value, x, y, kind, rect = null) {
 function drawTimer(ctx, state) {
   drawCompactPanel(ctx, TIMER_RECT.x, TIMER_RECT.y, TIMER_RECT.w, TIMER_RECT.h, "#e1c06a");
   ctx.textAlign = "center";
-  drawOutlinedText(ctx, `${Math.ceil(state.timer.remaining)}s`, TIMER_RECT.x + TIMER_RECT.w / 2, TIMER_RECT.y + 29, 21, "#fff8cc", "#332719", 4);
+  const urgent = state.timer.remaining <= 30;
+  drawOutlinedText(ctx, "剩余", TIMER_RECT.x + TIMER_RECT.w / 2, TIMER_RECT.y + 14, 11, urgent ? "#ffe0b0" : "#fff6c8", "#332719", 2.5);
+  drawOutlinedText(ctx, `${Math.ceil(state.timer.remaining)}s`, TIMER_RECT.x + TIMER_RECT.w / 2, TIMER_RECT.y + 34, 19, urgent ? "#ffd27a" : "#fff8cc", "#332719", 4);
   ctx.textAlign = "left";
 }
 

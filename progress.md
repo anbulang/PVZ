@@ -383,3 +383,34 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `git diff --check`: PASS.
 - Ran browser verification for normal, versus-balance, and visual-polish 1280 scenarios: PASS with no missing assets and no console errors.
 - In-app browser screenshot checked: `test-results/in-app-balance-check.png` opens at `http://localhost:5174/` with no console errors.
+
+## 2026-05-19 Timer Clarity and Zombie Pressure Pass
+
+- Clarified the current win condition: plant side wins by surviving the full countdown and clearing the field; zombie side wins by breaking through the left defense.
+- Made the timer HUD explicitly read `剩余 210s` instead of a bare number, and added the win condition to `render_game_to_text()` for browser verification.
+- Shifted tempo further toward the zombie side: round duration is now 210s, initial plant sun is lower, passive sky sun and sunflower production are slower, and core shooter damage was reduced again.
+- Strengthened zombie pressure: initial brain is higher, brain regen and max brain are higher, combo refund is larger, zombie stats were modestly buffed, and the final minute gives zombies extra brain regen and movement speed.
+- Updated tests and browser scenarios for the new economy and timer rules.
+- Ran `npm test`: PASS, 63 tests.
+- Ran `git diff --check`: PASS.
+- Ran browser verification for versus-balance, sun, normal flow, and visual-polish 1280 scenarios: PASS with no missing assets and no console errors.
+- In-app browser was hard-refreshed after detecting cached old `index.html`; screenshot confirms the visible HUD now shows `剩余 210s`, initial sun `125`, and initial brain `120`.
+
+## 2026-05-20 Persistent Local Server
+
+- Root cause: prior `localhost:5174` runs depended on Codex/Terminal foreground processes, so the service disappeared when those processes ended.
+- Added `scripts/com.pvz.localserver.plist` to run `/usr/bin/python3 -m http.server 5174 --bind 127.0.0.1 --directory /Users/chaucermini/Code/PVZ/.worktrees/local-versus-game` as a user LaunchAgent.
+- Loaded the service with `launchctl bootstrap gui/501 ...` and started it with `launchctl kickstart -k gui/501/com.pvz.localserver`.
+- Verified `launchctl print gui/501/com.pvz.localserver`: state `running`, pid `23165`.
+- Verified `curl -I http://localhost:5174/`: HTTP 200.
+- Refreshed in-app browser: page title `花园攻防本地双人版`, console errors empty.
+
+## 2026-05-20 LAN Server Exposure
+
+- User explicitly approved exposing the PVZ local server to the LAN.
+- Changed `scripts/com.pvz.localserver.plist` from `--bind 127.0.0.1` to `--bind 0.0.0.0`.
+- Reloaded LaunchAgent with `launchctl bootout`, `launchctl bootstrap`, and `launchctl kickstart -k`.
+- Verified actual service arguments include `--bind 0.0.0.0`.
+- Verified `curl -I http://localhost:5174/`: HTTP 200.
+- Verified `curl -I http://192.168.2.15:5174/`: HTTP 200.
+- Refreshed in-app browser: page title `花园攻防本地双人版`, console errors empty.

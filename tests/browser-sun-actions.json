@@ -3,12 +3,12 @@
     { "buttons": ["left_mouse_button"], "frames": 2, "mouse_x": 32, "mouse_y": 32 },
     { "command": { "type": "placePlant", "plantType": "sunflower", "row": 2, "col": 2 }, "frames": 2 },
     { "command": { "type": "deployZombie", "zombieType": "basic", "row": 4 }, "frames": 2 },
-    { "buttons": [], "advanceMs": 8300 },
+    { "buttons": [], "advanceMs": 10800 },
     { "command": { "type": "collectAllSun" }, "frames": 2 },
     { "buttons": [], "advanceMs": 250 }
   ],
   "expect": {
-    "minSun": 150,
+    "minSun": 100,
     "audioUnlocked": true,
     "musicActive": true,
     "anyCollectSunEffect": true,

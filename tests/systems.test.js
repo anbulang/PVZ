@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createGameState, serializeGameState } from "../src/game/state.js";
 import { applyCommand, spawnZombie } from "../src/game/commands.js";
 import { updateGame } from "../src/game/systems.js";
-import { ROUND, ZOMBIES } from "../src/game/config.js";
+import { INITIAL_RESOURCES, ROUND, ZOMBIES } from "../src/game/config.js";
 import { armorDropAssetFor } from "../src/game/assets.js";
 
 function step(state, seconds) {
@@ -33,7 +33,7 @@ test("passive sky sun waits longer than the old early snowball cadence", () => {
 test("sunflowers produce visible sun pickups with amounts", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 9.1);
+  step(state, 10.7);
   const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
   assert.equal(Boolean(producedSun), true);
   assert.equal(producedSun.amount, 25);
@@ -43,7 +43,7 @@ test("sunflowers produce visible sun pickups with amounts", () => {
 test("nearby sunflower sun pickups merge into a higher-value pickup", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 18.6);
+  step(state, 21.3);
   const produced = state.sunPickups.filter((sun) => sun.kind === "plant");
   assert.equal(produced.length, 1);
   assert.equal(produced[0].amount, 50);
@@ -53,7 +53,7 @@ test("twin sunflowers produce larger sun pickups", () => {
   const state = createGameState();
   state.resources.plant.sun = 250;
   applyCommand(state, { type: "placePlant", plantType: "twinSunflower", row: 2, col: 2 });
-  step(state, 10.2);
+  step(state, 12.2);
   const producedSun = state.sunPickups.find((sun) => sun.kind === "plant");
   assert.equal(Boolean(producedSun), true);
   assert.equal(producedSun.amount, 50);
@@ -64,7 +64,7 @@ test("collecting sun creates amount feedback", () => {
   state.sunPickups.push({ id: "sun-test", x: 200, y: 200, amount: 25, ttl: 10 });
   applyCommand(state, { type: "collectSun", id: "sun-test" });
   const feedback = state.effects.find((effect) => effect.type === "collectSun");
-  assert.equal(state.resources.plant.sun, 175);
+  assert.equal(state.resources.plant.sun, INITIAL_RESOURCES.sun + 25);
   assert.equal(feedback.amount, 25);
   assert.equal(feedback.maxTtl, 1.25);
 });
@@ -91,9 +91,21 @@ test("shooters enter attack visual state when firing", () => {
 test("sunflowers enter produce visual state when creating sun", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
-  step(state, 9.05);
+  step(state, 10.55);
   assert.equal(state.plants[0].visualState, "produce");
   assert.equal(state.sunPickups.some((sun) => sun.kind === "plant" && sun.amount === 25), true);
+});
+
+test("final minute gives zombies a pressure push", () => {
+  const state = createGameState();
+  state.started = true;
+  state.timer.remaining = ROUND.finalPushStartsAt - 1;
+  const brainBefore = state.resources.zombie.brain;
+  spawnZombie(state, "basic", 2);
+  const xBefore = state.zombies[0].x;
+  step(state, 1);
+  assert.equal(state.resources.zombie.brain > brainBefore + ROUND.zombieBrainPerSecond, true);
+  assert.equal(state.zombies[0].x < xBefore - ZOMBIES.basic.speed, true);
 });
 
 test("repeaters fire burst projectiles", () => {
@@ -185,13 +197,13 @@ test("manual zombie deployment drives versus pressure", () => {
 test("game waits for first interaction before timers and waves advance", () => {
   const state = createGameState();
   step(state, 10);
-  assert.equal(state.timer.remaining, 180);
+  assert.equal(state.timer.remaining, ROUND.duration);
   assert.equal(state.director.waveCount, 0);
   assert.equal(state.director.warning, null);
   applyCommand(state, { type: "clearSelection" });
   step(state, 1);
   assert.equal(state.started, true);
-  assert.equal(state.timer.remaining < 180, true);
+  assert.equal(state.timer.remaining < ROUND.duration, true);
 });
 
 test("lane mower clears the first breakthrough in a lane", () => {

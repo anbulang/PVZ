@@ -122,6 +122,12 @@ if (actions.expect?.minSun !== undefined && (state.resources?.sun ?? 0) < action
 if (actions.expect?.minBrain !== undefined && (state.resources?.brain ?? 0) < actions.expect.minBrain) {
   process.exitCode = 1;
 }
+if (actions.expect?.timeRemainingMax !== undefined && (state.timeRemaining ?? Infinity) > actions.expect.timeRemainingMax) {
+  process.exitCode = 1;
+}
+if (actions.expect?.winConditionPlantIncludes && !state.winCondition?.plant?.includes(actions.expect.winConditionPlantIncludes)) {
+  process.exitCode = 1;
+}
 if (actions.expect?.minZombieComboCount !== undefined && (state.resources?.zombieCombo?.count ?? 0) < actions.expect.minZombieComboCount) {
   process.exitCode = 1;
 }

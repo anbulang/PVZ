@@ -1,5 +1,5 @@
-import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-balance1";
-import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-balance1";
+import { GRID, INITIAL_RESOURCES, PLANTS, ROUND, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { ASSET_MANIFEST, ASSET_PATHS, armorDropAssetFor, plantVisualFor, primaryAssetPath, primaryVisualPath, zombieVisualFor } from "./assets.js?v=20260519-tempo1";
 
 export function createGameState() {
   return {
@@ -37,7 +37,7 @@ export function createGameState() {
     },
     commandQueue: [],
     nextEntityId: 1,
-    status: "选择卡牌开始攻防。",
+    status: `植物守满 ${ROUND.duration} 秒并清场获胜；僵尸突破左线获胜。`,
     paused: false,
     winner: null,
   };
@@ -60,6 +60,10 @@ export function serializeGameState(state) {
     paused: state.paused,
     gameOver: Boolean(state.winner),
     winner: state.winner,
+    winCondition: {
+      plant: "守满倒计时并清空场上僵尸",
+      zombie: "突破左侧防线",
+    },
     coordinateSystem: "origin top-left; x grows right; y grows down; grid row 0..4 top-bottom col 0..8 left-right",
     timeRemaining: Number(state.timer.remaining.toFixed(2)),
     resources: {

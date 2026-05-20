@@ -1,6 +1,6 @@
-import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-balance1";
-import { drainCommandQueue } from "./commands.js?v=20260519-balance1";
-import { nextId } from "./state.js?v=20260519-balance1";
+import { CANVAS, GRID, PLANTS, PROJECTILES, ROUND, SUN_PICKUP, ZOMBIES } from "./config.js?v=20260519-tempo1";
+import { drainCommandQueue } from "./commands.js?v=20260519-tempo1";
+import { nextId } from "./state.js?v=20260519-tempo1";
 
 export function updateGame(state, dt) {
   drainCommandQueue(state);
@@ -31,9 +31,10 @@ function updateResources(state, dt) {
     state.resources.plant.passiveSunClock -= ROUND.passiveSunInterval;
     createSunPickup(state, GRID.left + 100 + seededLane(state, 7) * 95, GRID.top - 10, ROUND.passiveSunAmount, "sky");
   }
+  const finalPush = state.timer.remaining <= ROUND.finalPushStartsAt ? ROUND.finalPushBrainMultiplier : 1;
   state.resources.zombie.brain = Math.min(
     ROUND.maxZombieBrain,
-    state.resources.zombie.brain + ROUND.zombieBrainPerSecond * dt,
+    state.resources.zombie.brain + ROUND.zombieBrainPerSecond * finalPush * dt,
   );
 }
 
@@ -243,7 +244,8 @@ function updateZombies(state, dt) {
     } else {
       const slowFactor = zombie.slowTimer > 0 ? 0.55 : 1;
       const chargeFactor = zombie.chargeTimer > 0 ? config.chargeMultiplier ?? 1 : 1;
-      zombie.x -= config.speed * slowFactor * chargeFactor * dt;
+      const finalPush = state.timer.remaining <= ROUND.finalPushStartsAt ? ROUND.finalPushSpeedMultiplier : 1;
+      zombie.x -= config.speed * slowFactor * chargeFactor * finalPush * dt;
     }
   }
 }
