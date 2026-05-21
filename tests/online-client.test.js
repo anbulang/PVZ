@@ -7,6 +7,7 @@ import {
   applyRoomSnapshot,
   canSendOnlineCommand,
   loadOnlineIdentity,
+  onlinePanelViewModel,
   saveOnlineIdentity,
   webSocketUrlForLocation,
 } from "../src/online/client.js";
@@ -78,6 +79,41 @@ test("online room snapshot updates room metadata without replacing local selecti
   assert.equal(state.online.roomCode, "ROOM");
   assert.equal(state.online.phase, "playing");
   assert.deepEqual(state.selection, selection);
+});
+
+test("online panel view model exposes ready reconnect and play again states", () => {
+  const ready = onlinePanelViewModel({
+    roomCode: "ROOM",
+    phase: "ready",
+    side: "plant",
+    peerCount: 2,
+    players: {
+      plant: { ready: false, playAgainReady: false, online: true },
+      zombie: { ready: true, playAgainReady: false, online: true },
+    },
+  });
+  assert.equal(ready.phaseLabel, "等待准备");
+  assert.equal(ready.showReady, true);
+  assert.equal(ready.readyText, "准备");
+  assert.equal(ready.showPlayAgain, false);
+
+  const paused = onlinePanelViewModel({ roomCode: "ROOM", phase: "pausedForReconnect", side: "plant", reconnectRemainingMs: 55000 });
+  assert.equal(paused.phaseLabel, "等待重连");
+  assert.match(paused.detail, /55s/);
+
+  const finished = onlinePanelViewModel({
+    roomCode: "ROOM",
+    phase: "finished",
+    side: "zombie",
+    players: {
+      plant: { ready: false, playAgainReady: true, online: true },
+      zombie: { ready: false, playAgainReady: false, online: true },
+    },
+  });
+  assert.equal(finished.phaseLabel, "本局结束");
+  assert.equal(finished.showReady, false);
+  assert.equal(finished.showPlayAgain, true);
+  assert.equal(finished.playAgainText, "再来一局");
 });
 
 class MapStorage {

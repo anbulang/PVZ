@@ -34,6 +34,14 @@ export function createOnlineClient({
     }
     joinRoom(roomCode, panel.sideInput?.value ?? "zombie").catch((error) => showError(error));
   });
+  panel?.readyButton?.addEventListener("click", () => {
+    const current = online?.players?.[online.side]?.ready ?? false;
+    setReady(!current).catch((error) => showError(error));
+  });
+  panel?.playAgainButton?.addEventListener("click", () => {
+    const current = online?.players?.[online.side]?.playAgainReady ?? false;
+    setPlayAgainReady(!current).catch((error) => showError(error));
+  });
 
   autoJoinFromUrl().catch((error) => showError(error));
   updatePanel();
@@ -214,13 +222,26 @@ export function createOnlineClient({
   function updatePanel() {
     if (!panel) return;
     if (online?.clientId) {
-      panel.status.textContent = `在线 ${sideLabel(online.side)}`;
+      const view = onlinePanelViewModel(online);
+      panel.panel.dataset.phase = view.phase;
+      panel.status.textContent = `在线 ${sideLabel(online.side)} · ${view.phaseLabel}`;
       panel.roomBadge.textContent = `房间 ${online.roomCode} · ${online.peerCount}/2`;
+      panel.detail.textContent = view.detail;
+      panel.readyButton.hidden = !view.showReady;
+      panel.readyButton.textContent = view.readyText;
+      panel.playAgainButton.hidden = !view.showPlayAgain;
+      panel.playAgainButton.textContent = view.playAgainText;
       if (panel.roomInput) panel.roomInput.value = online.roomCode;
       if (panel.sideInput) panel.sideInput.value = online.side;
+      setLobbyControlsHidden(panel, true);
     } else {
+      panel.panel.dataset.phase = "local";
       panel.status.textContent = "本地双人";
       panel.roomBadge.textContent = "";
+      panel.detail.textContent = "";
+      panel.readyButton.hidden = true;
+      panel.playAgainButton.hidden = true;
+      setLobbyControlsHidden(panel, false);
     }
   }
 
@@ -311,13 +332,50 @@ export function canSendOnlineCommand(side, command) {
   return false;
 }
 
+export function onlinePanelViewModel(online) {
+  const phase = online?.phase ?? "local";
+  const phaseLabel = {
+    local: "本地双人",
+    lobby: "等待加入",
+    ready: "等待准备",
+    playing: "对局中",
+    pausedForReconnect: "等待重连",
+    finished: "本局结束",
+  }[phase] ?? "在线";
+  const currentPlayer = online?.players?.[online?.side] ?? {};
+  const readySummary = `植物 ${readyLabel(online?.players?.plant?.ready)} · 僵尸 ${readyLabel(online?.players?.zombie?.ready)}`;
+  const playAgainSummary = `再来一局：植物 ${confirmLabel(online?.players?.plant?.playAgainReady)} · 僵尸 ${confirmLabel(online?.players?.zombie?.playAgainReady)}`;
+  const remainingSeconds = Math.ceil((online?.reconnectRemainingMs ?? 0) / 1000);
+  const detail = {
+    lobby: "等待另一名玩家加入。",
+    ready: readySummary,
+    playing: online?.players?.[oppositeSide(online?.side)]?.online === false ? "对手离线。" : "双方在线。",
+    pausedForReconnect: `等待重连 ${remainingSeconds}s。`,
+    finished: playAgainSummary,
+  }[phase] ?? "";
+
+  return {
+    phase,
+    phaseLabel,
+    detail,
+    showReady: phase === "ready",
+    readyText: currentPlayer.ready ? "取消准备" : "准备",
+    showPlayAgain: phase === "finished",
+    playAgainText: currentPlayer.playAgainReady ? "取消再来" : "再来一局",
+  };
+}
+
 function bindOnlinePanel(root) {
   if (!root) return null;
   const panel = root.querySelector("#online-panel");
   if (!panel) return null;
   return {
+    panel,
+    detail: panel.querySelector("#online-detail"),
     hostButton: panel.querySelector("#online-host"),
     joinButton: panel.querySelector("#online-join"),
+    playAgainButton: panel.querySelector("#online-play-again"),
+    readyButton: panel.querySelector("#online-ready"),
     roomBadge: panel.querySelector("#online-room-badge"),
     roomInput: panel.querySelector("#online-room-code"),
     sideInput: panel.querySelector("#online-side"),
@@ -331,4 +389,23 @@ function clonePlain(value) {
 
 function sideLabel(side) {
   return side === "zombie" ? "僵尸方" : "植物方";
+}
+
+function oppositeSide(side) {
+  return side === "plant" ? "zombie" : "plant";
+}
+
+function readyLabel(ready) {
+  return ready ? "已准备" : "未准备";
+}
+
+function confirmLabel(ready) {
+  return ready ? "已确认" : "未确认";
+}
+
+function setLobbyControlsHidden(panel, hidden) {
+  panel.hostButton.hidden = hidden;
+  panel.joinButton.hidden = hidden;
+  panel.roomInput.hidden = hidden;
+  panel.sideInput.hidden = hidden;
 }

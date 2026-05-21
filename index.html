@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>花园攻防在线双人版</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./src/styles.css?v=20260519-tempo1" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260522-ws-ui1" />
   </head>
   <body>
     <main class="game-shell">
@@ -21,10 +21,13 @@
           <option value="zombie">僵尸方</option>
         </select>
         <button id="online-join" type="button">加入</button>
+        <button id="online-ready" type="button" hidden>准备</button>
+        <button id="online-play-again" type="button" hidden>再来一局</button>
+        <span id="online-detail" class="online-detail"></span>
       </section>
       <canvas id="game" width="1280" height="720" aria-label="在线双人横向泳道塔防游戏"></canvas>
       <p id="screen-reader-state" class="sr-only" aria-live="polite"></p>
     </main>
-    <script type="module" src="./src/main.js?v=20260519-tempo1"></script>
+    <script type="module" src="./src/main.js?v=20260522-ws-ui1"></script>
   </body>
 </html>
