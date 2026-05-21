@@ -9,6 +9,7 @@ import {
   submitOnlineCommand,
   tickOnlineRoom,
 } from "./room.js";
+import { attachOnlineWebSocketServer } from "./ws-server.js";
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -31,14 +32,9 @@ export function createOnlineHttpServer({ rootDir = process.cwd(), tickMs = 1000 
     });
   });
 
-  if (tickMs > 0) {
-    const interval = setInterval(() => {
-      for (const room of rooms.values()) tickOnlineRoom(room, tickMs / 1000);
-    }, tickMs);
-    server.on("close", () => clearInterval(interval));
-  }
-
+  const onlineWebSocket = attachOnlineWebSocketServer(server, { rooms, tickMs });
   server.onlineRooms = rooms;
+  server.onlineWebSocket = onlineWebSocket;
   return server;
 }
 
