@@ -5,6 +5,7 @@ import {
   createOnlineRoom,
   joinOnlineRoom,
   serializeOnlineRoom,
+  setOnlineReady,
   submitOnlineCommand,
   tickOnlineRoom,
 } from "./room.js";
@@ -83,6 +84,16 @@ async function handleApi({ request, response, rooms, url }) {
     const submitted = submitOnlineCommand(room, body.clientId, body.command);
     if (!submitted.ok) return sendJson(response, 403, { error: submitted.reason });
     tickOnlineRoom(room, 0);
+    return sendJson(response, 200, serializeOnlineRoom(room, body.clientId));
+  }
+
+  const readyMatch = url.pathname.match(/^\/api\/rooms\/([^/]+)\/ready$/);
+  if (request.method === "POST" && readyMatch) {
+    const room = rooms.get(readyMatch[1].toUpperCase());
+    if (!room) return sendJson(response, 404, { error: "room not found" });
+    const body = await readJson(request);
+    const ready = setOnlineReady(room, body.clientId, Boolean(body.ready));
+    if (!ready.ok) return sendJson(response, 403, { error: ready.reason });
     return sendJson(response, 200, serializeOnlineRoom(room, body.clientId));
   }
 

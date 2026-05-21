@@ -15,6 +15,18 @@ test("online HTTP server creates a room and syncs two device commands", async (t
   assert.equal(joined.online.side, "zombie");
   assert.equal(joined.online.peerCount, 2);
 
+  const plantReady = await postJson(`${baseUrl}/api/rooms/${created.online.roomCode}/ready`, {
+    clientId: created.online.clientId,
+    ready: true,
+  });
+  const zombieReady = await postJson(`${baseUrl}/api/rooms/${created.online.roomCode}/ready`, {
+    clientId: joined.online.clientId,
+    ready: true,
+  });
+
+  assert.equal(plantReady.room.phase, "ready");
+  assert.equal(zombieReady.room.phase, "playing");
+
   await postJson(`${baseUrl}/api/rooms/${created.online.roomCode}/commands`, {
     clientId: created.online.clientId,
     command: { type: "placePlant", plantType: "peashooter", row: 2, col: 1 },
