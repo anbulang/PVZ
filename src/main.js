@@ -4,7 +4,7 @@ import { attachInput } from "./game/input.js?v=20260521-online1";
 import { renderGame } from "./game/render.js?v=20260519-tempo1";
 import { createGameState, serializeGameState } from "./game/state.js?v=20260519-tempo1";
 import { updateGame } from "./game/systems.js?v=20260519-tempo1";
-import { createOnlineClient } from "./online/client.js?v=20260521-online1";
+import { createOnlineClient } from "./online/client.js?v=20260522-ws1";
 
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
@@ -54,6 +54,11 @@ window.advanceTime = (ms) => {
 window.render_game_to_text = () => serializeGameState(state);
 window.__audioDebug = () => getAudioDebugState();
 window.__onlineClient = onlineClient;
+window.__onlineDebug = () => ({
+  isOnline: onlineClient.isOnline(),
+  selection: onlineClient.getSelection(),
+  online: window.__gameState.online ?? null,
+});
 
 renderGame(ctx, state);
 requestAnimationFrame(frame);

@@ -3,19 +3,25 @@ import { PLANTS, ZOMBIES } from "../game/config.js";
 const PLANT_COMMANDS = new Set(["placePlant", "shovel", "collectSun", "collectAllSun"]);
 const ZOMBIE_COMMANDS = new Set(["deployZombie"]);
 const NEUTRAL_COMMANDS = new Set(["restart", "togglePause"]);
+const IDENTITY_KEY = "pvz-online-identity";
 
 export function createOnlineClient({
   state,
   localDispatch,
   root = typeof document !== "undefined" ? document : null,
-  requestJson = defaultRequestJson,
-  pollMs = 160,
+  storage = typeof localStorage !== "undefined" ? localStorage : null,
+  locationLike = typeof location !== "undefined" ? location : null,
+  historyLike = typeof history !== "undefined" ? history : null,
+  createSocket = (url) => new WebSocket(url),
 } = {}) {
   let online = null;
   let localSelection = null;
-  let polling = false;
-  let pollTimer = null;
+  let socket = null;
+  let connecting = null;
+  let clientSequence = 0;
+  const roomWaiters = [];
   const panel = bindOnlinePanel(root);
+  const storedIdentity = storage ? loadOnlineIdentity(storage) : null;
 
   panel?.hostButton?.addEventListener("click", () => {
     hostRoom(panel.sideInput?.value ?? "plant").catch((error) => showError(error));
@@ -39,6 +45,8 @@ export function createOnlineClient({
     hydrateSnapshot,
     isOnline: () => Boolean(online?.clientId),
     joinRoom,
+    setPlayAgainReady,
+    setReady,
   };
 
   function dispatchCommand(command) {
@@ -52,35 +60,42 @@ export function createOnlineClient({
       updatePanel();
       return;
     }
+    if (online.phase !== "playing") {
+      setStatus("等待双方准备后开始。");
+      return;
+    }
     if (!canSendOnlineCommand(online.side, command)) {
       setStatus(`当前设备控制${sideLabel(online.side)}。`);
       return;
     }
-    requestJson(`/api/rooms/${encodeURIComponent(online.roomCode)}/commands`, {
-      method: "POST",
-      body: { clientId: online.clientId, command },
-    })
-      .then((snapshot) => hydrateSnapshot(snapshot))
-      .catch((error) => showError(error));
+    send({ type: "command", sequence: nextClientSequence(), command }).catch((error) => showError(error));
   }
 
   async function hostRoom(side = "plant") {
-    const snapshot = await requestJson("/api/rooms", { method: "POST", body: { side } });
-    hydrateSnapshot(snapshot, { clearSelection: true });
+    await ensureConnected();
+    const snapshotPromise = waitForRoomSnapshot((room) => room.side === side);
+    await send({ type: "createRoom", side });
+    const room = await snapshotPromise;
     syncUrl();
-    startPolling();
-    return snapshot;
+    return { room, online: room };
   }
 
   async function joinRoom(roomCode, side = "zombie") {
-    const snapshot = await requestJson(`/api/rooms/${encodeURIComponent(roomCode.toUpperCase())}/join`, {
-      method: "POST",
-      body: { side },
-    });
-    hydrateSnapshot(snapshot, { clearSelection: true });
+    await ensureConnected();
+    const normalizedRoom = roomCode.toUpperCase();
+    const snapshotPromise = waitForRoomSnapshot((room) => room.roomCode === normalizedRoom && room.side === side);
+    await send({ type: "joinRoom", roomCode: normalizedRoom, side, clientId: online?.clientId });
+    const room = await snapshotPromise;
     syncUrl();
-    startPolling();
-    return snapshot;
+    return { room, online: room };
+  }
+
+  async function setReady(ready) {
+    await send({ type: "setReady", ready });
+  }
+
+  async function setPlayAgainReady(ready) {
+    await send({ type: "playAgainReady", ready });
   }
 
   function hydrateSnapshot(snapshot, options = {}) {
@@ -90,25 +105,95 @@ export function createOnlineClient({
     updatePanel();
   }
 
-  function startPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(() => {
-      if (!online?.clientId || polling) return;
-      polling = true;
-      requestJson(`/api/rooms/${encodeURIComponent(online.roomCode)}/snapshot?clientId=${encodeURIComponent(online.clientId)}`, { method: "GET" })
-        .then((snapshot) => hydrateSnapshot(snapshot))
-        .catch((error) => showError(error))
-        .finally(() => {
-          polling = false;
-        });
-    }, pollMs);
+  async function ensureConnected() {
+    if (socket?.readyState === WebSocket.OPEN) return;
+    if (connecting) return connecting;
+    connecting = new Promise((resolve, reject) => {
+      socket = createSocket(webSocketUrlForLocation(locationLike ?? globalThis.location));
+      socket.addEventListener("open", () => {
+        sendRaw({ type: "hello", clientId: storedIdentity?.clientId ?? online?.clientId ?? null });
+      });
+      socket.addEventListener("message", (event) => {
+        handleSocketMessage(event.data);
+      });
+      socket.addEventListener("error", () => {
+        reject(new Error("WebSocket 连接失败"));
+      }, { once: true });
+      socket.addEventListener("close", () => {
+        if (online?.clientId) setStatus("联机连接已断开，正在等待重连。");
+      });
+      const welcomeWaiter = waitForRoomlessWelcome(resolve);
+      socket.__welcomeWaiter = welcomeWaiter;
+    }).finally(() => {
+      connecting = null;
+    });
+    return connecting;
+  }
+
+  function handleSocketMessage(raw) {
+    const message = JSON.parse(typeof raw === "string" ? raw : raw.toString());
+    if (message.type === "welcome") {
+      online = { ...(online ?? {}), clientId: message.clientId };
+      socket.__welcomeWaiter?.(message.clientId);
+      return;
+    }
+    if (message.type === "roomSnapshot") {
+      const room = { ...message.room, clientId: online?.clientId ?? null };
+      online = room;
+      applyRoomSnapshot(state, room, localSelection);
+      if (storage && room.clientId && room.roomCode) saveOnlineIdentity(storage, { clientId: room.clientId, roomCode: room.roomCode, side: room.side });
+      updatePanel();
+      resolveRoomWaiters(room);
+      return;
+    }
+    if (message.type === "gameSnapshot") {
+      applyOnlineSnapshot(state, { state: message.state, online }, localSelection);
+      updatePanel();
+      return;
+    }
+    if (message.type === "error") {
+      setStatus(`联机失败：${message.message ?? message.code}`);
+    }
+  }
+
+  function send(payload) {
+    return ensureConnected().then(() => sendRaw(payload));
+  }
+
+  function sendRaw(payload) {
+    socket.send(JSON.stringify(payload));
+  }
+
+  function waitForRoomSnapshot(predicate) {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        const index = roomWaiters.indexOf(waiter);
+        if (index >= 0) roomWaiters.splice(index, 1);
+        reject(new Error("等待房间快照超时"));
+      }, 2500);
+      const waiter = { predicate, resolve, timeout };
+      roomWaiters.push(waiter);
+    });
+  }
+
+  function resolveRoomWaiters(room) {
+    for (const waiter of [...roomWaiters]) {
+      if (!waiter.predicate(room)) continue;
+      clearTimeout(waiter.timeout);
+      roomWaiters.splice(roomWaiters.indexOf(waiter), 1);
+      waiter.resolve(room);
+    }
+  }
+
+  function waitForRoomlessWelcome(resolve) {
+    return () => resolve();
   }
 
   async function autoJoinFromUrl() {
-    if (typeof location === "undefined") return;
-    const params = new URLSearchParams(location.search);
+    if (!locationLike) return;
+    const params = new URLSearchParams(locationLike.search);
     const roomCode = params.get("room");
-    const side = params.get("side") ?? "plant";
+    const side = params.get("side") ?? storedIdentity?.side ?? "plant";
     if (roomCode) {
       if (panel?.roomInput) panel.roomInput.value = roomCode.toUpperCase();
       if (panel?.sideInput) panel.sideInput.value = side;
@@ -119,11 +204,11 @@ export function createOnlineClient({
   }
 
   function syncUrl() {
-    if (!online?.roomCode || typeof history === "undefined" || typeof location === "undefined") return;
-    const params = new URLSearchParams(location.search);
+    if (!online?.roomCode || !historyLike || !locationLike) return;
+    const params = new URLSearchParams(locationLike.search);
     params.set("room", online.roomCode);
     params.set("side", online.side);
-    history.replaceState(null, "", `${location.pathname}?${params.toString()}`);
+    historyLike.replaceState(null, "", `${locationLike.pathname}?${params.toString()}`);
   }
 
   function updatePanel() {
@@ -147,6 +232,30 @@ export function createOnlineClient({
   function showError(error) {
     setStatus(`联机失败：${error.message}`);
   }
+
+  function nextClientSequence() {
+    clientSequence += 1;
+    return clientSequence;
+  }
+}
+
+export function webSocketUrlForLocation(locationLike = globalThis.location) {
+  const protocol = locationLike.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${locationLike.host}/ws`;
+}
+
+export function saveOnlineIdentity(storage, identity) {
+  storage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+}
+
+export function loadOnlineIdentity(storage) {
+  const raw = storage.getItem(IDENTITY_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function applyRoomSnapshot(state, room, localSelection = null) {
+  state.online = { ...(state.online ?? {}), ...clonePlain(room) };
+  state.selection = localSelection;
 }
 
 export function applyOnlineSnapshot(state, snapshot, localSelection = null) {
@@ -200,18 +309,6 @@ export function canSendOnlineCommand(side, command) {
   if (side === "plant") return PLANT_COMMANDS.has(command?.type);
   if (side === "zombie") return ZOMBIE_COMMANDS.has(command?.type);
   return false;
-}
-
-async function defaultRequestJson(url, options = {}) {
-  const init = {
-    method: options.method ?? "GET",
-    headers: { "content-type": "application/json" },
-  };
-  if (options.body !== undefined) init.body = JSON.stringify(options.body);
-  const response = await fetch(url, init);
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error ?? response.statusText);
-  return payload;
 }
 
 function bindOnlinePanel(root) {

@@ -1,7 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createGameState } from "../src/game/state.js";
-import { applyLocalSelectionCommand, applyOnlineSnapshot, canSendOnlineCommand } from "../src/online/client.js";
+import {
+  applyLocalSelectionCommand,
+  applyOnlineSnapshot,
+  applyRoomSnapshot,
+  canSendOnlineCommand,
+  loadOnlineIdentity,
+  saveOnlineIdentity,
+  webSocketUrlForLocation,
+} from "../src/online/client.js";
 
 test("online snapshot preserves the local device selection", () => {
   const state = createGameState();
@@ -41,3 +49,47 @@ test("online command send filter matches player sides", () => {
   assert.equal(canSendOnlineCommand("zombie", { type: "placePlant" }), false);
   assert.equal(canSendOnlineCommand("zombie", { type: "togglePause" }), true);
 });
+
+test("websocket URL builder keeps the current host and uses /ws", () => {
+  assert.equal(webSocketUrlForLocation({ protocol: "http:", host: "192.168.2.15:5191" }), "ws://192.168.2.15:5191/ws");
+  assert.equal(webSocketUrlForLocation({ protocol: "https:", host: "game.example.test" }), "wss://game.example.test/ws");
+});
+
+test("client identity storage persists client id and room", () => {
+  const storage = new MapStorage();
+  saveOnlineIdentity(storage, { clientId: "client-a", roomCode: "ROOM", side: "plant" });
+  assert.deepEqual(loadOnlineIdentity(storage), { clientId: "client-a", roomCode: "ROOM", side: "plant" });
+});
+
+test("online room snapshot updates room metadata without replacing local selection", () => {
+  const state = createGameState();
+  const selection = { side: "plant", kind: "plant", type: "peashooter" };
+  applyRoomSnapshot(state, {
+    roomCode: "ROOM",
+    phase: "playing",
+    side: "plant",
+    peerCount: 2,
+    players: {
+      plant: { clientId: "plant-device", online: true, ready: true, playAgainReady: false, disconnectedAt: null },
+      zombie: { clientId: "zombie-device", online: true, ready: true, playAgainReady: false, disconnectedAt: null },
+    },
+  }, selection);
+
+  assert.equal(state.online.roomCode, "ROOM");
+  assert.equal(state.online.phase, "playing");
+  assert.deepEqual(state.selection, selection);
+});
+
+class MapStorage {
+  constructor() {
+    this.map = new Map();
+  }
+
+  getItem(key) {
+    return this.map.has(key) ? this.map.get(key) : null;
+  }
+
+  setItem(key, value) {
+    this.map.set(key, value);
+  }
+}
