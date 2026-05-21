@@ -240,3 +240,16 @@
 - 运行 `npm test`：通过，72 个测试。由于 sandbox 会阻止本地端口绑定，通过的完整测试是在已批准的 sandbox escalation 下执行。
 - 运行 `node scripts/verify-browser.js http://127.0.0.1:5191 tests/browser-actions.json`：通过，无 console 错误和缺失素材。
 - 运行 `node scripts/verify-online-browser.js http://127.0.0.1:5191`：通过。两个 Chromium 页面加入房间 `QOBV`，植物方放置 `peashooter`，僵尸方投放 `basic`，两端收到一致的植物和僵尸实体。
+
+## 2026-05-22 WebSocket 在线对战完整体验
+
+- 使用 `ws` 将 LAN 在线对战从 HTTP polling 升级为 WebSocket 房间传输，HTTP 静态服务继续保留。
+- 新增显式房间阶段：`lobby`、`ready`、`playing`、`pausedForReconnect`、`finished`。
+- 新增双方准备、60 秒同 `clientId` 重连、掉线暂停、超时判负和双方确认再来一局。
+- 更新浏览器房间面板，显示在线阶段、准备状态、重连暂停和再来一局控件。
+- 浏览器在线客户端改为 `/ws`，保留本地卡牌 selection，只把真实 gameplay command 发送到服务器。
+- 已验证 room core、HTTP 兼容入口、WebSocket 协议、现有本地流程、主浏览器回归和双浏览器在线流程。
+- 运行 `npm test`：通过，83 个测试。由于 sandbox 会阻止本地端口监听，完整测试使用已批准的 sandbox escalation 执行。
+- 运行 `node scripts/verify-browser.js http://127.0.0.1:5191 tests/browser-actions.json`：通过，无 console 错误、无缺失素材，`director.autoWaves === false`，`manualDeployCount === 1`。
+- 运行 `node scripts/verify-online-browser.js http://127.0.0.1:5191`：通过。两个 Chromium 页面加入房间 `TAYN`，双方 `ready: true`，植物方放置 `peashooter`，僵尸方投放 `basic`，刷新僵尸页面后恢复 `zombie` 身份，两端实体一致。
+- 运行 `git diff --check`：通过。
