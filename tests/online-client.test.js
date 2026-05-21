@@ -8,6 +8,7 @@ import {
   canSendOnlineCommand,
   loadOnlineIdentity,
   onlinePanelViewModel,
+  roomMatchesJoinRequest,
   saveOnlineIdentity,
   webSocketUrlForLocation,
 } from "../src/online/client.js";
@@ -114,6 +115,20 @@ test("online panel view model exposes ready reconnect and play again states", ()
   assert.equal(finished.showReady, false);
   assert.equal(finished.showPlayAgain, true);
   assert.equal(finished.playAgainText, "再来一局");
+});
+
+test("online panel view model does not render undefined before joining a room", () => {
+  const pending = onlinePanelViewModel({ clientId: "client-a" });
+
+  assert.equal(pending.phaseLabel, "连接中");
+  assert.equal(pending.statusText.includes("undefined"), false);
+  assert.equal(pending.roomBadge, "");
+  assert.equal(pending.detail, "请选择创建房间或加入房间。");
+});
+
+test("client join matcher accepts server-assigned remaining side", () => {
+  assert.equal(roomMatchesJoinRequest({ roomCode: "ROOM", side: "zombie" }, "room"), true);
+  assert.equal(roomMatchesJoinRequest({ roomCode: "OTHER", side: "zombie" }, "room"), false);
 });
 
 class MapStorage {

@@ -11,11 +11,12 @@ for (const page of [plantPage, zombiePage]) {
 }
 
 await plantPage.goto(baseUrl, { waitUntil: "networkidle" });
-await zombiePage.goto(baseUrl, { waitUntil: "networkidle" });
 
 const hosted = await plantPage.evaluate(() => window.__onlineClient.hostRoom("plant"));
 const roomCode = hosted.room?.roomCode ?? hosted.online?.roomCode;
-await zombiePage.evaluate((code) => window.__onlineClient.joinRoom(code, "zombie"), roomCode);
+await zombiePage.goto(joinUrl(baseUrl, roomCode, "plant"), { waitUntil: "networkidle" });
+await zombiePage.waitForFunction(() => window.__gameState.online?.side === "zombie");
+const duplicateJoinPanelText = await zombiePage.locator("#online-panel").innerText();
 
 await plantPage.evaluate(() => window.__onlineClient.setReady(true));
 await zombiePage.evaluate(() => window.__onlineClient.setReady(true));
@@ -55,6 +56,7 @@ const result = {
   zombieOnline,
   plantDebug,
   zombieDebug,
+  duplicateJoinPanelText,
   plantEntities: plantState.entities,
   zombieEntities: zombieState.entities,
 };
@@ -66,6 +68,7 @@ if (plantOnline.side !== "plant" || zombieOnline.side !== "zombie") process.exit
 if (plantOnline.phase !== "playing" || zombieOnline.phase !== "playing") process.exitCode = 1;
 if (plantOnline.players.plant.ready !== true || plantOnline.players.zombie.ready !== true) process.exitCode = 1;
 if (zombieDebug.online.side !== "zombie") process.exitCode = 1;
+if (duplicateJoinPanelText.includes("undefined") || !duplicateJoinPanelText.includes("僵尸方")) process.exitCode = 1;
 if (plantState.entities.plants.length !== 1 || zombieState.entities.plants.length !== 1) process.exitCode = 1;
 if (plantState.entities.zombies.length !== 1 || zombieState.entities.zombies.length !== 1) process.exitCode = 1;
 
@@ -89,4 +92,11 @@ function waitForEntitySync(page) {
 
 function readTextState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
+}
+
+function joinUrl(url, roomCode, side) {
+  const target = new URL(url);
+  target.searchParams.set("room", roomCode);
+  target.searchParams.set("side", side);
+  return target.toString();
 }

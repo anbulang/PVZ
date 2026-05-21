@@ -34,6 +34,18 @@ test("online room pairs one plant device with one zombie device", () => {
   assert.deepEqual(snapshot.online.sides, { plant: "plant-device", zombie: "zombie-device" });
 });
 
+test("online room assigns the remaining side when requested side is already taken", () => {
+  const room = createOnlineRoom({ code: "ROOM4" });
+
+  const plant = joinOnlineRoom(room, { clientId: "plant-device", requestedSide: "plant" });
+  const secondPlant = joinOnlineRoom(room, { clientId: "second-device", requestedSide: "plant" });
+
+  assert.equal(plant.ok, true);
+  assert.equal(secondPlant.ok, true);
+  assert.equal(secondPlant.side, "zombie");
+  assert.equal(room.clients.get("second-device").side, "zombie");
+});
+
 test("online room applies commands from both devices to one authoritative state", () => {
   const room = createPlayingRoom({ code: "ROOM2" });
   const plant = room.clients.get("plant-device");

@@ -48,17 +48,17 @@ export function createOnlineClient({
 
   return {
     dispatchCommand,
-    getSelection: () => (online ? localSelection : state.selection),
+    getSelection: () => (online?.roomCode ? localSelection : state.selection),
     hostRoom,
     hydrateSnapshot,
-    isOnline: () => Boolean(online?.clientId),
+    isOnline: () => Boolean(online?.roomCode),
     joinRoom,
     setPlayAgainReady,
     setReady,
   };
 
   function dispatchCommand(command) {
-    if (!online?.clientId) {
+    if (!online?.roomCode) {
       localDispatch(command);
       return;
     }
@@ -91,7 +91,7 @@ export function createOnlineClient({
   async function joinRoom(roomCode, side = "zombie") {
     await ensureConnected();
     const normalizedRoom = roomCode.toUpperCase();
-    const snapshotPromise = waitForRoomSnapshot((room) => room.roomCode === normalizedRoom && room.side === side);
+    const snapshotPromise = waitForRoomSnapshot((room) => roomMatchesJoinRequest(room, normalizedRoom));
     await send({ type: "joinRoom", roomCode: normalizedRoom, side, clientId: online?.clientId });
     const room = await snapshotPromise;
     syncUrl();
@@ -224,16 +224,16 @@ export function createOnlineClient({
     if (online?.clientId) {
       const view = onlinePanelViewModel(online);
       panel.panel.dataset.phase = view.phase;
-      panel.status.textContent = `在线 ${sideLabel(online.side)} · ${view.phaseLabel}`;
-      panel.roomBadge.textContent = `房间 ${online.roomCode} · ${online.peerCount}/2`;
+      panel.status.textContent = view.statusText;
+      panel.roomBadge.textContent = view.roomBadge;
       panel.detail.textContent = view.detail;
       panel.readyButton.hidden = !view.showReady;
       panel.readyButton.textContent = view.readyText;
       panel.playAgainButton.hidden = !view.showPlayAgain;
       panel.playAgainButton.textContent = view.playAgainText;
-      if (panel.roomInput) panel.roomInput.value = online.roomCode;
-      if (panel.sideInput) panel.sideInput.value = online.side;
-      setLobbyControlsHidden(panel, true);
+      if (view.hasRoom && panel.roomInput) panel.roomInput.value = online.roomCode;
+      if (view.hasRoom && panel.sideInput) panel.sideInput.value = online.side;
+      setLobbyControlsHidden(panel, view.hasRoom);
     } else {
       panel.panel.dataset.phase = "local";
       panel.status.textContent = "本地双人";
@@ -332,9 +332,15 @@ export function canSendOnlineCommand(side, command) {
   return false;
 }
 
+export function roomMatchesJoinRequest(room, roomCode) {
+  return room?.roomCode === roomCode.toUpperCase() && (room.side === "plant" || room.side === "zombie");
+}
+
 export function onlinePanelViewModel(online) {
-  const phase = online?.phase ?? "local";
+  const hasRoom = Boolean(online?.roomCode);
+  const phase = hasRoom ? online?.phase ?? "lobby" : online?.clientId ? "connecting" : "local";
   const phaseLabel = {
+    connecting: "连接中",
     local: "本地双人",
     lobby: "等待加入",
     ready: "等待准备",
@@ -347,16 +353,22 @@ export function onlinePanelViewModel(online) {
   const playAgainSummary = `再来一局：植物 ${confirmLabel(online?.players?.plant?.playAgainReady)} · 僵尸 ${confirmLabel(online?.players?.zombie?.playAgainReady)}`;
   const remainingSeconds = Math.ceil((online?.reconnectRemainingMs ?? 0) / 1000);
   const detail = {
+    connecting: "请选择创建房间或加入房间。",
     lobby: "等待另一名玩家加入。",
     ready: readySummary,
     playing: online?.players?.[oppositeSide(online?.side)]?.online === false ? "对手离线。" : "双方在线。",
     pausedForReconnect: `等待重连 ${remainingSeconds}s。`,
     finished: playAgainSummary,
   }[phase] ?? "";
+  const statusText = hasRoom ? `在线 ${sideLabel(online.side)} · ${phaseLabel}` : phaseLabel;
+  const roomBadge = hasRoom ? `房间 ${online.roomCode} · ${online.peerCount}/2` : "";
 
   return {
+    hasRoom,
     phase,
     phaseLabel,
+    roomBadge,
+    statusText,
     detail,
     showReady: phase === "ready",
     readyText: currentPlayer.ready ? "取消准备" : "准备",

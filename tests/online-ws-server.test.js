@@ -79,6 +79,30 @@ test("websocket room pauses on disconnect and resumes same client id", async (t)
   assert.equal(resumed.room.players.zombie.online, true);
 });
 
+test("websocket join assigns remaining side when duplicate plant side is requested", async (t) => {
+  const server = createOnlineHttpServer({ rootDir: process.cwd(), tickMs: 0 });
+  await listen(server);
+  t.after(() => closeOnlineServer(server));
+
+  const baseUrl = `ws://127.0.0.1:${server.address().port}/ws`;
+  const plant = await connectClient(baseUrl);
+  const second = await connectClient(baseUrl);
+  t.after(() => plant.close());
+  t.after(() => second.close());
+
+  await exchange(plant, { type: "hello", clientId: "plant-device" }, "welcome");
+  plant.send(JSON.stringify({ type: "createRoom", side: "plant" }));
+  const created = await waitForMessage(plant, "roomSnapshot");
+
+  await exchange(second, { type: "hello", clientId: "second-device" }, "welcome");
+  second.send(JSON.stringify({ type: "joinRoom", roomCode: created.room.roomCode, side: "plant" }));
+  const joined = await waitForMessage(second, "roomSnapshot");
+
+  assert.equal(joined.room.side, "zombie");
+  assert.equal(joined.room.players.plant.clientId, "plant-device");
+  assert.equal(joined.room.players.zombie.clientId, "second-device");
+});
+
 function connectClient(url) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url);

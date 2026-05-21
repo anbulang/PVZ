@@ -198,7 +198,7 @@ export function serializeGameSnapshot(room) {
 
 function resolveSide(room, requestedSide) {
   if (requestedSide && !SIDES.includes(requestedSide)) return null;
-  if (requestedSide) return isSideTaken(room, requestedSide) ? null : requestedSide;
+  if (requestedSide && !isSideTaken(room, requestedSide)) return requestedSide;
   return SIDES.find((side) => !isSideTaken(room, side)) ?? null;
 }
 
