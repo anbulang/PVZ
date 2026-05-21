@@ -1,30 +1,41 @@
 import { enqueueCommand } from "./game/commands.js?v=20260519-tempo1";
 import { getAudioDebugState, processAudioEvents, unlockAudio } from "./game/audio.js?v=20260519-tempo1";
-import { attachInput } from "./game/input.js?v=20260519-tempo1";
+import { attachInput } from "./game/input.js?v=20260521-online1";
 import { renderGame } from "./game/render.js?v=20260519-tempo1";
 import { createGameState, serializeGameState } from "./game/state.js?v=20260519-tempo1";
 import { updateGame } from "./game/systems.js?v=20260519-tempo1";
+import { createOnlineClient } from "./online/client.js?v=20260521-online1";
 
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const srState = document.querySelector("#screen-reader-state");
 const state = createGameState();
+const onlineClient = createOnlineClient({
+  state,
+  localDispatch: (command) => enqueueCommand(state, command),
+});
 let accumulator = 0;
 let lastTime = performance.now();
 const fixedDt = 1 / 60;
 
-attachInput(canvas, state);
+attachInput(canvas, state, (command) => onlineClient.dispatchCommand(command), {
+  getSelection: () => onlineClient.getSelection(),
+});
 canvas.addEventListener("pointerdown", unlockAudio);
 window.addEventListener("keydown", unlockAudio);
 
 function frame(now) {
   const elapsed = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
-  accumulator += elapsed;
-  while (accumulator >= fixedDt) {
-    updateGame(state, fixedDt);
-    processAudioEvents(state.audioEvents);
-    accumulator -= fixedDt;
+  if (onlineClient.isOnline()) {
+    accumulator = 0;
+  } else {
+    accumulator += elapsed;
+    while (accumulator >= fixedDt) {
+      updateGame(state, fixedDt);
+      processAudioEvents(state.audioEvents);
+      accumulator -= fixedDt;
+    }
   }
   renderGame(ctx, state);
   srState.textContent = state.status;
@@ -32,8 +43,9 @@ function frame(now) {
 }
 
 window.__gameState = state;
-window.__enqueueGameCommand = (command) => enqueueCommand(state, command);
+window.__enqueueGameCommand = (command) => onlineClient.dispatchCommand(command);
 window.advanceTime = (ms) => {
+  if (onlineClient.isOnline()) return;
   const steps = Math.max(1, Math.round(ms / (1000 / 60)));
   for (let i = 0; i < steps; i += 1) updateGame(state, fixedDt);
   processAudioEvents(state.audioEvents);
@@ -41,6 +53,7 @@ window.advanceTime = (ms) => {
 };
 window.render_game_to_text = () => serializeGameState(state);
 window.__audioDebug = () => getAudioDebugState();
+window.__onlineClient = onlineClient;
 
 renderGame(ctx, state);
 requestAnimationFrame(frame);

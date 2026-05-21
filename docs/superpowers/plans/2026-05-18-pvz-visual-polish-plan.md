@@ -4,9 +4,9 @@
 
 **目标:** 在不大改现有版式和玩法规则的前提下，修复当前 PVZ 本地对战画面的 HUD 对齐、素材完整性、僵尸死亡方向、小鬼成本和多窗口截图验收问题。
 
-**架构:** 保留当前 Canvas 2D 渲染、固定逻辑坐标和现有模块边界。输入命中区继续由 `src/game/input.js` 统一导出，渲染层只读取这些矩形；素材优先走 `generated-assets/` 和 `src/game/assets.js` manifest；行为改动必须先写 `node:test` 失败用例。
+**架构：** 保留当前 Canvas 2D 渲染、固定逻辑坐标和现有模块边界。输入命中区继续由 `src/game/input.js` 统一导出，渲染层只读取这些矩形；素材优先走 `generated-assets/` 和 `src/game/assets.js` manifest；行为改动必须先写 `node:test` 失败用例。
 
-**技术栈:** JavaScript ES modules、Canvas 2D、Node `node:test`、Playwright、`scripts/verify-browser.js`、`generated-assets/` 精灵图资源。
+**技术栈：** JavaScript ES modules、Canvas 2D、Node `node:test`、Playwright、`scripts/verify-browser.js`、`generated-assets/` 精灵图资源。
 
 ---
 
@@ -889,8 +889,8 @@ node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish
 
 推荐使用 `superpowers:subagent-driven-development`：
 
-- Worker A：任务 1、2、3，负责 HUD、输入命中区、小鬼成本。
-- Worker B：任务 4、5，负责生成素材、manifest、死亡动画。
-- Worker C：任务 6、7、8，负责场景绘制、浏览器验证和截图验收。
+- 工作者 A：任务 1、2、3，负责 HUD、输入命中区、小鬼成本。
+- 工作者 B：任务 4、5，负责生成素材、manifest、死亡动画。
+- 工作者 C：任务 6、7、8，负责场景绘制、浏览器验证和截图验收。
 
 如果不使用 subagent，则使用 `superpowers:executing-plans` 逐任务执行。每个任务都要先看到失败测试，再实现，再运行通过测试，再提交。

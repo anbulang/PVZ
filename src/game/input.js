@@ -10,40 +10,41 @@ export const BRAIN_COUNTER_RECT = { x: 698, y: 18, w: 88, h: 42 };
 export const THREAT_PANEL_RECT = { x: 612, y: 72, w: 174, h: 58 };
 export const ZOMBIE_PANEL_RECT = { x: 798, y: 12, w: 460, h: 132 };
 
-export function attachInput(canvas, state) {
+export function attachInput(canvas, state, dispatchCommand = (command) => enqueueCommand(state, command), options = {}) {
   canvas.addEventListener("click", (event) => {
     const point = canvasPoint(canvas, event);
-    const command = commandFromPoint(state, point);
-    if (command) enqueueCommand(state, command);
+    const command = commandFromPoint(state, point, options);
+    if (command) dispatchCommand(command);
   });
 
   window.addEventListener("keydown", (event) => {
-    if (event.key === "p") enqueueCommand(state, { type: "togglePause" });
-    if (event.key === "r" && state.winner) enqueueCommand(state, { type: "restart" });
+    if (event.key === "p") dispatchCommand({ type: "togglePause" });
+    if (event.key === "r" && state.winner) dispatchCommand({ type: "restart" });
     if (event.key === "f") toggleFullscreen(canvas);
   });
 }
 
-export function commandFromPoint(state, point) {
+export function commandFromPoint(state, point, options = {}) {
+  const selection = options.selection ?? options.getSelection?.() ?? state.selection;
   if (hitSunCounter(point) && state.sunPickups.length > 0) return { type: "collectAllSun" };
 
   const sun = hitSunPickup(state, point);
   if (sun) return { type: "collectSun", id: sun.id };
 
   const plantCard = hitCard(point, "plant");
-  if (plantCard) return toggleSelection(state, { type: "select", side: "plant", kind: plantCard.kind, unitType: plantCard.id });
+  if (plantCard) return toggleSelection(selection, { type: "select", side: "plant", kind: plantCard.kind, unitType: plantCard.id });
   const zombieCard = hitCard(point, "zombie");
-  if (zombieCard) return toggleSelection(state, { type: "select", side: "zombie", kind: "zombie", unitType: zombieCard.id });
+  if (zombieCard) return toggleSelection(selection, { type: "select", side: "zombie", kind: "zombie", unitType: zombieCard.id });
 
   const cell = gridCellFromPoint(point);
-  if (cell && state.selection?.side === "plant") {
-    if (state.selection.kind === "shovel") return { type: "shovel", row: cell.row, col: cell.col };
-    return { type: "placePlant", plantType: state.selection.type, row: cell.row, col: cell.col };
+  if (cell && selection?.side === "plant") {
+    if (selection.kind === "shovel") return { type: "shovel", row: cell.row, col: cell.col };
+    return { type: "placePlant", plantType: selection.type, row: cell.row, col: cell.col };
   }
 
   const lane = deployLaneFromPoint(point);
-  if (lane !== null && state.selection?.side === "zombie") {
-    return { type: "deployZombie", zombieType: state.selection.type, row: lane };
+  if (lane !== null && selection?.side === "zombie") {
+    return { type: "deployZombie", zombieType: selection.type, row: lane };
   }
 
   return { type: "clearSelection" };
@@ -69,8 +70,8 @@ function hitSunCounter(point) {
   );
 }
 
-function toggleSelection(state, command) {
-  if (state.selection?.side === command.side && state.selection?.type === command.unitType && state.selection?.kind === command.kind) {
+function toggleSelection(selection, command) {
+  if (selection?.side === command.side && selection?.type === command.unitType && selection?.kind === command.kind) {
     return { type: "clearSelection" };
   }
   return command;

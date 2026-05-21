@@ -1,416 +1,242 @@
-Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款植物大战僵尸的游戏
+原始提示：[@superpowers](plugin://superpowers@openai-curated) 做一款植物大战僵尸的游戏
 
-# Progress
+# 进度
 
 - 已确认方向：本地双人，植物方 vs 僵尸方，架构预留未来 WebSocket 同步。
 - 已确认约束：不打包原作素材或游戏本体，使用原创 Canvas 绘制素材，保留用户本地素材替换入口。
-- 当前实现：核心状态、命令队列、模拟系统、输入映射、Canvas 渲染和 Node 测试已写入。
-
-## Verification
-
-- Ran `npm test`: PASS, 13 tests.
-- Ran browser verification against `http://localhost:5173`: PASS.
-- Browser state contained 2 plants, 1 zombie, and active projectiles.
-- Console errors: none.
-- Screenshot checked: cards, 5-lane grid, plants, zombie, projectiles, deployment strip, and status bar are visible.
-- Replaced procedural unit/card/projectile rendering with assets loaded from `/assets`.
-- Ran browser verification against `http://localhost:5174` after asset replacement: PASS.
-- Screenshot checked: plant cards, zombie cards, placed plants, deployed zombie, and projectiles use the downloaded asset pack.
-
-## Next Suggestions
-
-- Add real WebSocket room transport using the existing command queue.
-- Add optional user-supplied asset manifest under `assets/manifest.json`.
-- Add balance presets for short, normal, and long matches.
-
-## 2026-05-05 Gameplay Polish Iteration
-
-- Added collectible sun pickups for passive sun and sunflower production.
-- Added lane mowers as one-time breakthrough protection per lane.
-- Added director waves with lane warning, automatic pressure spawns, wave count, and threat meter.
-- Added cherry bomb and imp zombie as new tactical units.
-- Improved HUD, card cooldown/resource feedback, lane warning, shadows, mower visuals, sun visuals, and explosion effects.
-- Ran `npm test`: PASS, 18 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
-- Screenshot checked: expanded cards, collectible sun, mowers, pressure meter, units, projectiles, and status bar visible.
-
-## 2026-05-05 Asset Animation And Audio Iteration
-
-- Replaced hand-drawn lane mowers with the asset pack `小推车.png`.
-- Added procedural Web Audio background music and event sounds for planting, sun collection, zombie spawn, hit, bite, armor drop, explosion, mower, and wave warning.
-- Added zombie eating animation mapping for basic, imp, cone, bucket, and runner zombies.
-- Added plant bite deformation, bite marks, and stronger eaten feedback.
-- Added armor drop state: armored zombies switch to a no-armor body after damage threshold and leave visible dropped armor near their feet.
-- Extended browser verifier to support command-driven scenarios and expectations for eating/armor-drop state.
-- Ran `npm test`: PASS, 19 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS.
-- Screenshot checked: mower asset, eating animation, plant bite deformation, bite marks, and armor drop feedback visible.
-
-## 2026-05-05 Real GIF Animation And OGG Audio Fix
-
-- Replaced the previous procedural oscillator audio with real OGG playback from `assets/音效`, including background music, planting, growth, bite, hit, armor, explosion, mower, and wave sounds.
-- Split asset mappings into `plantIdle`, `zombieWalk`, `zombieEat`, `zombieFeedback`, `ui`, `sfx`, and `music`, preferring `assets/图片/...` with compatibility fallbacks.
-- Removed continuous artificial plant/zombie wobble; zombies now switch between walking/eating GIFs through `zombie.eating`, and plants only use a short restrained bite pulse.
-- Added audio debug state to `render_game_to_text` and extended browser verification to fail on missing critical GIF/OGG assets or audio loading errors.
-- Ran `npm test`: PASS, 20 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, with `audioUnlocked: true`, `musicActive: true`, no missing assets, and no console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, with eating and armor-drop state verified.
-- Screenshot checked: mower asset, GIF units, cone zombie eating state, bite marks, and dropped armor are visible without large artificial wobble.
-
-## 2026-05-05 Sun Feedback And Non-Vocal BGM Fix
-
-- Changed background music from `ZombiesOnYourLawn.ogg` to low-volume `rain.ogg` with `phonograph.ogg` fallback.
-- Moved sun pickup rendering above plants, added visible pickup amounts, and placed sunflower-produced sun above the plant head.
-- Added `+25` collection feedback with amount data in state serialization for browser verification.
-- Restored restrained plant idle sway only for real planted units; card icons stay still and bite compression remains dominant.
-- Added tests for sunflower sun amount, collect feedback amount, non-vocal music mapping, and multi-frame zombie walking GIFs.
-- Ran `npm test`: PASS, 24 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, music path `assets/音效/rain.ogg`, no missing assets or console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun resource 125 and active `collectSun` effect amount 25.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating and armor-drop regression still verified.
-- Screenshot checked: sunflower sun value `25`, collection `+25`, walking zombies, and field units are visible.
-
-## 2026-05-05 User-Selected Background Music
-
-- Changed background music to `assets/音效/ZombiesOnYourLawn.ogg`.
-- Kept `mainmusic.mo3` out of the browser audio path because HTMLAudio does not natively play MO3 files without an additional decoder or conversion step.
-
-## 2026-05-05 Plant Sun Balance Visibility
-
-- Added a persistent top-layer plant-side sun balance badge so the current sun total is not hidden by seed cards.
-- Added HUD-adjacent `+/-` sun delta feedback for planting costs and sun collection income.
-- Updated plant placement and sun collection status text to include spent/gained sun and current balance.
-- Ran `npm test`: PASS, 24 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, current sun 125 and positive sun delta verified.
-- Screenshot checked: visible `阳光 125`, field sun `25`, collect `+25`, and status text with current balance.
-
-## 2026-05-05 Zombie Scenario GIF Selection Fix
-
-- Centralized zombie visual selection so `walk` and `eat` states map directly to their scenario GIFs.
-- Fixed armored zombies in eating state to keep their original eating GIF, such as `路障僵尸啃食.gif`, even after armor-drop feedback.
-- Added serialized `visualState` and `visualAsset` fields for browser verification.
-- Added unit and browser assertions for `普通僵尸走路.gif` and `路障僵尸啃食.gif`.
-- Ran `npm test`: PASS, 25 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, walking zombies report `普通僵尸走路.gif`.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, eating cone zombie reports `路障僵尸啃食.gif`.
-
-## 2026-05-05 Combat Readability Feedback
-
-- Added floating damage numbers for pea hits, frost hits, cherry bomb damage, and zombie bite damage.
-- Added short `击倒` feedback when zombies are defeated.
-- Serialized effect targets so browser tests can distinguish zombie damage from plant damage.
-- Added a dedicated browser hit scenario for projectile damage readability.
-- Ran `npm test`: PASS, 25 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-hit-actions.json`: PASS, zombie damage number captured.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, plant bite damage number and eating GIF captured.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, normal flow unchanged.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS, sun flow unchanged.
-
-## 2026-05-05 Remove Damage Numbers
-
-- Removed all combat damage number generation and rendering per user request.
-- Kept health bars, hit flashes, bite GIFs, armor drops, and non-numeric `击倒` feedback.
-- Removed the dedicated browser hit-number scenario.
-- Ran `npm test`: PASS, 25 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS, no `damageNumber` effects remain.
-- Ran normal and sun browser flows: PASS.
-- Screenshot checked: no `-24` / `-26` damage numbers visible.
-
-## 2026-05-05 Asset-Driven Foundation Pass
-
-- Added `ASSET_MANIFEST` while keeping `ASSET_PATHS` compatibility, covering scene, UI, plant, zombie, projectile, and audio groupings.
-- Switched the canvas background to the daytime scene asset and made HUD elements use seed/shop, sun counter, shovel slot, and FlagMeter assets where available.
-- Added serialized `visualAssets.scene` and `visualAssets.ui` debug fields so browser verification can prove the canvas is using real asset paths.
-- Replaced zombie defeat text with `zombieDeath` effects that render death GIFs such as `僵尸死.gif`, `小鬼死亡.gif`, and `橄榄球僵尸死.gif`.
-- Added browser scenarios for visual asset wiring and unit death-state GIF verification.
-- Ran `npm test`: PASS, 26 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-assets-actions.json`: PASS, with scene/UI assets, BGM, walking GIF, no missing assets, and no console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-unit-states-actions.json`: PASS, with `zombieDeath` using `僵尸死.gif`.
-- Ran normal, feedback/eating, and sun browser flows: PASS.
-- Screenshot checked: daytime background, asset HUD, sun counter, FlagMeter, mower assets, plant idle motion, and walking zombie GIF are visible without damage numbers.
-
-## 2026-05-07 Expanded Unit And Special State Pass
-
-- Converted plant and zombie card rails to compact two-row layouts so more units fit without leaving the canvas.
-- Added new plants with distinct roles: `repeater` burst damage, `twinSunflower` economy, `torchwood` pea-to-firepea upgrade, `potatoMine` arming/trap burst, and `jalapeno` lane clear.
-- Added new zombies with distinct pressure patterns: `flag` faster pressure, `screen` shielded armor target, and `zamboni` vehicle crush behavior.
-- Wired corresponding assets for new plants, zombies, fire peas, potato mine armed state, iron-door bite/walk GIFs, zamboni GIF, and jalapeno/ignite/potato/zamboni sound events.
-- Added `plant.visualState` and `plant.visualAsset` serialization for browser verification.
-- Added `rowFire` lane-clearing visual feedback and made it visible in screenshots.
-- Added browser scenarios for expanded units and special plants.
-- Ran `npm test`: PASS, 32 tests.
-- Ran browser verification for normal, sun, feedback/eating, expanded-unit, visual-asset, unit-death, and special-plant scenarios: PASS with no missing assets or console errors.
-- Ran the `develop-web-game` Playwright client against the expanded-unit scenario after linking the project `node_modules` into the skill script folder.
-- Screenshot checked: compact cards, torchwood, armed potato mine, fire peas, iron-door zombie, zamboni, and jalapeno row fire are visible.
-
-## 2026-05-08 Layout And Zombie GIF Verification Pass
-
-- Moved HUD card hot zones and the sun counter into separate slots so the plant balance no longer overlaps seed cards.
-- Added a dedicated mower lane overlay and adjusted daytime background cropping so the mower row stays clear of the house texture.
-- Kept every playable zombie on its own scenario GIF for walk/eat states; armor-drop feedback no longer downgrades visuals to a basic zombie, and zamboni remains a special driving state.
-- Added state-keyed image records for zombie drawing and serialized `animationSource: "gif"` for browser verification.
-- Added layout and GIF animation tests, including a browser pixel-diff check for live GIF frame changes.
-- Ran `npm test`: PASS, 35 tests.
-- Ran browser verification for layout, GIF animation, normal, sun, feedback/eating, visual-asset, expanded-unit, and special-plant scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: mower lane is clean, sun counter does not overlap cards, and zombie GIF animation is visible and measurable.
-
-## 2026-05-11 Chrome Playtest Fun Pass
-
-- Used Chrome/Playwright to play an opening sequence with sunflower, peashooter, manual zombie deployment, sun collection, and auto wave pressure.
-- Found two play-feel issues: visible sun stacked around sunflowers and was tedious to click; auto waves could hit empty lanes instead of the defended lane, making the board feel inactive.
-- Added a sun-counter click shortcut that collects all visible sun pickups at once while preserving individual `+amount` feedback.
-- Spread overlapping sun pickups around their source so sunflower output is easier to read and click.
-- Changed the director to prioritize rows that already contain plant defenses, while avoiding over-stacking zombies in the same lane.
-- Added an inline favicon to eliminate the browser favicon 404 during Chrome playtests.
-- Ran `npm test`: PASS, 39 tests.
-- Ran browser verification for normal, sun collection, feedback/eating, visual assets, and GIF animation scenarios: PASS with no missing assets or console errors.
-- Chrome screenshot checked: same-lane combat is active, one-click sun collection clears pickups, and the board has a clearer early-game rhythm.
-
-## 2026-05-12 Game Studio Playtest Foundation Pass
-
-- Applied the `game-studio:web-game-foundations` frame: kept simulation, rendering, input, and asset boundaries intact while improving the core loop.
-- Playtested an opening sequence and found that the game could advance waves before the player made a first move, which made refreshed tabs feel unfair and confusing.
-- Added a `started` simulation flag so timers, resources, waves, and zombie movement wait until the first player interaction.
-- Added a ready overlay that says `准备开始` and explains that selecting a card starts the timer.
-- Moved sunflower-generated sun higher above the plant so pickups are easier to read and no longer cover the sunflower head.
-- Added cache-busting query versions for the browser module graph so Chrome loads the current gameplay code after refresh.
-- Ran `npm test`: PASS, 40 tests.
-- Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: ready overlay holds at 180 seconds with 0 waves and 0 zombies; first card selection starts the match.
-
-## 2026-05-12 Game Studio Midgame Readability Pass
-
-- Used the Game Studio playtest workflow on an opening-to-midgame sequence with economy, manual zombie pressure, auto waves, and mower activation.
-- Found the main playability issue was visual noise from many separate sun pickups around sunflowers, which pulled attention away from lane combat.
-- Added simulation-level sun pickup merging: nearby same-kind sun pickups combine into one higher-value pickup up to 100, preserving total economy while reducing clutter.
-- Updated browser module cache versions to force Chrome to load the current optimized simulation and render code.
-- Added/updated tests so repeated sunflower production now verifies a merged 50-sun pickup instead of two overlapping 25-sun pickups.
-- Ran `npm test`: PASS, 40 tests.
-- Ran browser verification for normal, sun, feedback/eating, and GIF animation scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: midgame visible sun pickups dropped from six small overlapping items to four clearer pickups including a `50`, with combat lanes easier to read.
-
-## 2026-05-12 UI And Generated Sprite Remaster Pass
-
-- Generated a commit-friendly original asset set under `generated-assets/`, including the lawn scene, card/resource/status panels, sun/mower/shovel UI, projectiles, effects, plant sheets, and zombie walk/eat/death sheets.
-- Added `SPRITESHEET_MANIFEST` with frame size, frame count, fps, loop, and anchor metadata; Canvas now prefers generated PNG spritesheets and keeps the local `assets/...` GIF/PNG files as fallback.
-- Rebuilt the HUD into fixed slots for sun, plant cards, timer/pressure, brain, and zombie cards; card labels were removed from the cards, leaving icon + cost/cooldown only.
-- Added plant visual pulses for attack, production, activation, arming, and bite damage; zombies now report and render `animationSource: "spritesheet"` for walk/eat/death states.
-- Updated browser verification to measure spritesheet frame changes, and updated visual assertions to target generated assets.
-- Ran `npm test`: PASS, 42 tests.
-- Ran browser verification for normal, layout, visual assets, spritesheet animation, sun, feedback/eating, expanded units, special plants, and unit death: PASS with no missing assets or console errors.
-- Screenshot checked: ready overlay, opening placement, midgame sun/combat, eating/armor feedback, and explosion effect all render clearly at 1280x720.
-
-## 2026-05-12 Codex Imagegen Asset Remaster
-
-- Replaced the procedural placeholder art with Codex image-generated atlases for units, UI, plant animation strips, and zombie animation strips.
-- Added `generated-assets/source/` atlas records and `scripts/remaster-imagegen-assets.py` to remove chroma-key backgrounds, crop atlas cells, normalize sprite anchors, and rewrite the shipped PNG spritesheets.
-- Preserved the existing `SPRITESHEET_MANIFEST` contract, but bumped generated asset URLs with an imagegen cache version so the browser refreshes the new art.
-- Made disabled card overlays semi-transparent so icons remain readable when unaffordable or cooling down.
-- Ran `npm test`: PASS, 42 tests.
-- Ran browser verification for normal, layout, visual assets, spritesheet animation, sun, feedback/eating, expanded units, special plants, and unit death: PASS with no missing assets or console errors.
-- Browser frame-diff for the basic zombie spritesheet reported more than 3000 changed pixels, confirming the new sprite strips animate in Canvas.
-
-## 2026-05-13 Game Studio Layout Repair Pass
-
-- Replaced the stretched generated HUD/status/overlay panel images with stable Canvas-drawn boards so card slots, resource numbers, cooldowns, and modal text no longer depend on imperfect atlas crops.
-- Kept generated icons, cards, mowers, sun, projectiles, and spritesheets, but moved the large generated UI panels to manifest/fallback use only.
-- Added a visible left-side house facade behind the mower bays, including roof trim, siding, windows, and a door, so the board again reads as plants defending the house.
-- Reworked mower bays into semi-transparent garage slots, keeping each mower aligned with its lane while letting the house context remain visible.
-- Rebuilt resource counters, timer, pressure meter, status bar, and ready/pause modal as fixed-size text-safe slots.
-- Ran `npm test`: PASS, 42 tests.
-- Ran browser verification for layout, visual assets, spritesheet frame-diff, feedback/eating, and unit-state scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: ready overlay, normal play HUD, left-side house/mower lane, sun value pickup, walking zombie, and cone zombie eating feedback are readable at 1280x720.
-
-## 2026-05-13 Game Studio Alignment Polish Pass
-
-- Generated a new Codex-image house/backyard strip and saved the shipped crop as `generated-assets/scene/house-left.png`.
-- Replaced the hand-drawn left house facade with the generated house strip, then constrained it to the mower lane so it no longer bleeds into the first lawn column.
-- Added `generated-assets/ui/sun-padded.png` and routed the sun icon through it so sun rays are not clipped in counters or pickups.
-- Moved the brain counter out of the zombie card board and aligned timer/pressure boxes as a clean vertical pair.
-- Moved the zombie card board to the right card cluster only, removing the large empty box behind the brain counter.
-- Re-anchored plant and zombie sprites to their cell floor instead of center points, fixing the visible mismatch between sprites and grid tiles.
-- Prevented unaffordable plant/zombie cards and cooling cards from becoming selected at the command layer.
-- Added regression coverage for unaffordable plant selection and included the new house/sun assets in asset and browser verification checks.
-- Ran `npm test`: PASS, 43 tests.
-- Ran browser verification for layout, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: unaffordable repeater click leaves selection empty, the generated house stays behind the mower lane, sun pickups render complete, and row sprites sit on tile baselines.
-
-## 2026-05-13 Game Studio Second Alignment Audit
-
-- Re-audited the eight remaining visual complaints with custom browser screenshots for all plants, all playable zombies, death effects, low-sun selection, and the normal layout.
-- Regenerated `generated-assets/scene/house-left.png` with a cleaner Codex-image house/path/grass strip inspired by the original backyard composition, removing the previous stacked garage-panel look.
-- Shifted the grass grid to `x=136`, narrowed cells to `100px`, and moved the deploy zone to `x=1050` so the generated house has enough width and no longer fights the first lawn column.
-- Removed the heavy mower bay panels; mower lanes now sit on the generated stone path with only subtle separators.
-- Moved plant and zombie anchors further upward inside each tile so sprites no longer sit below the grid baseline.
-- Compressed the brain counter and made the timer/pressure panels equal-width/equal-height, aligned as a neat vertical pair.
-- Forced all zombie death animation paths to generated spritesheets only, with a regression test to prevent fallback to legacy GIF death assets.
-- Ran `npm test`: PASS, 44 tests.
-- Ran browser verification for layout, visual assets, unit states, expanded units, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: all playable zombies are complete in cards and on the field, death effects serialize generated `*-death.png`, sun icon rays are intact, and low-sun repeater click leaves `selection: null`.
-
-## 2026-05-13 Card/HUD Fit And Old-Asset Sweep
-
-- Tightened plant and zombie card composition so unit art stays in the upper card area and the cost chip stays in the lower slot.
-- Collapsed timer, brain, and pressure into one aligned center column; the brain value no longer occupies a large empty HUD box.
-- Removed plant and zombie health bars from field rendering, matching the no-damage-number readability direction.
-- Rebuilt the shipped sun and mower icons as padded generated PNGs so sun rays and mower wheels are not clipped.
-- Kept the improved generated house/path strip and verified mowers sit on the left path without covering the lawn grid.
-- Re-ran the all-zombie browser sweep: all 8 playable zombies use generated walk/drive spritesheets, and all death effects serialize generated `*-death.png` assets.
-- Ran `npm test`: PASS, 44 tests.
-- Ran browser verification for layout, feedback/eating, visual assets, unit states, expanded units, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: `game-studio-layout4-layout.png`, `game-studio-layout4-feedback.png`, `game-studio-layout4-all-units.png`, `game-studio-layout4-unaffordable.png`, and `game-studio-layout4-death.png`.
-
-## 2026-05-13 Screenshot Annotation Fix Pass
-
-- Replaced the generated smiley sun with the original PVZ-style sun GIF, repacked as `generated-assets/ui/sun-original-padded.gif` with transparent margin so rays are not clipped.
-- Replaced the opaque generated selected-card overlay with a Canvas-drawn highlight stroke, keeping selected unit art visible.
-- Narrowed and re-centered the zombie deployment strip, then aligned manual/director spawn positions and projectile cleanup with the new `GRID.deployWidth`.
-- Moved the zombie card rail left so the top HUD no longer leaves a large empty gap between the status column and zombie cards.
-- Removed the permanent small controls line from the bottom status bar during active play, leaving one readable status line.
-- Reduced dropped armor size and moved it down to the tile floor so it no longer covers plants or zombie bodies.
-- Slightly reduced field zombie sprite sizes and changed card scaling to fit each zombie within its card frame.
-- Ran `npm test`: PASS, 44 tests.
-- Ran browser verification for layout, visual assets, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
-- Screenshot checked: `game-studio-layout5-layout.png`, `game-studio-layout5-feedback.png`, `game-studio-layout5-all-units.png`, and `game-studio-layout5-annotated-match.png`.
-
-## 2026-05-14 Code Review Fix Pass
-
-- Requested an independent Superpowers code review for the current visual/spritesheet worktree.
-- Fixed the critical review finding: successful plant placement and zombie deployment now clear the matching selected card so cooling or newly unaffordable cards cannot remain visually selected.
-- Added unit regressions for clearing selected plant/zombie cards after successful spend/cooldown.
-- Added browser verification support for `selectionNull` and enabled it in layout/visual-asset flows.
-- Added `/assets` to `.gitignore` so the local absolute symlink to the user's asset pack cannot be committed accidentally.
-- Documented hand-authored generated assets in `scripts/remaster-imagegen-assets.py`, added output validation, and added `requirements.txt` for Pillow.
-- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
-- Ran `npm test`: PASS, 46 tests.
-- Ran browser verification for layout, visual assets, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets or console errors.
-
-## 2026-05-15 Single Sun Collection Feedback Fix
-
-- Root cause: collecting one sun created both a `collectSun` effect and a positive `sunDelta` effect, so the same `+25` could render twice.
-- Added a failing regression for one sun pickup producing exactly one positive amount feedback, confirmed it failed with `2 !== 1`.
-- Removed positive `sunDelta` effects from `collectSun` and `collectAllSun`; plant spending still uses negative `sunDelta` for cost feedback.
-- Updated browser sun verification to require no positive `sunDelta` during collection.
-- Ran `npm test`: PASS, 47 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`: PASS with no missing assets or console errors.
-- Ran a targeted Playwright check for one pickup: PASS, state had exactly one positive `collectSun +25` effect and no positive `sunDelta`; screenshot saved as `test-results/single-sun-collect.png`.
-
-## 2026-05-16 Zombie Death Asset Sweep
-
-- Root cause: `scripts/remaster-imagegen-assets.py` still generated zombie death strips through the old generic `transformed_frames(..., "death")` path, so several death animations looked like procedural fades instead of Codex-generated character art.
-- Rebuilt all playable zombie death strips from Codex imagegen atlas frames or Codex static zombie crops using `death_frames_from_codex_art`, with drop pieces, collapse, dust, and remains frames.
-- Forced `ASSET_PATHS.zombieDeath` to generated spritesheet paths only and added tests blocking legacy GIF fallback and the old transformed-death generator path.
-- Added a system regression that kills every playable zombie type and verifies serialized `zombieDeath` effects point to `generated-assets/sprites/zombies/<type>-death.png` with `animationSource: "spritesheet"`.
-- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
-- Ran `npm test`: PASS, 49 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-unit-states-actions.json`: PASS with `basic-death.png`, no missing assets, and no console errors.
-- Screenshot/contact sheet checked: `test-results/death-sheets-contact-v2.png` and `test-results/all-zombie-death-runtime.png` show all eight zombie death sheets using Codex art-derived frames rather than the old one-size-fits-all fade.
-
-## 2026-05-16 Cone Armor Drop Fix
-
-- Root cause: `generated-assets/fx/armor-cone.png` was cropped from the same atlas area as `armor-bucket.png`, so road-cone armor loss displayed a broken bucket-like piece.
-- Rebuilt `armor-cone.png` from the Codex-generated cone zombie hat crop, rotated it into a fallen piece, added chip/crack detail, and kept bucket/screen/runner armor assets separate.
-- Added asset coverage so cone armor and bucket armor cannot be byte-identical again.
-- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
-- Ran `npm test`: PASS, 50 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS with no missing assets and no console errors.
-- Screenshot checked: `test-results/local-versus-game.png` shows cone zombie armor loss leaving a broken orange cone piece near the zombie instead of a bucket fragment.
-
-## 2026-05-17 Full Armor Drop Audit
-
-- Generalized the prior cone fix across every armor-dropping zombie: cone, bucket, screen-door, and runner.
-- Root cause found for runner: `armor-runner.png` also reused the bucket crop in `scripts/remaster-imagegen-assets.py`, so football zombies could drop a bucket-like fragment.
-- Rebuilt `armor-runner.png` from the Codex-generated football helmet crop, masked out the zombie face/background, rotated it into a fallen helmet, and added crack detail.
-- Centralized runtime armor-drop asset lookup with `armorDropAssetFor()` and serialized armor-drop `visualAsset` in `render_game_to_text()` so future browser checks can prove the exact asset path.
-- Strengthened tests: all four armor-drop assets must be distinct, and each armored zombie must emit its matching `hatType` and matching serialized asset path.
-- Ran `python3 scripts/remaster-imagegen-assets.py`: PASS.
-- Ran `npm test`: PASS, 51 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-feedback-actions.json`: PASS with no missing assets and no console errors.
-- Screenshot/contact sheet checked: `test-results/armor-drop-contact.png` and `test-results/all-armor-drops-runtime.png` show broken cone, bucket, screen-door, and football helmet as separate pieces.
-
-## 2026-05-17 HUD Card Area Rebalance
-
-- Applied the Game Studio UI pass to rebalance the top HUD: shovel moved into a separate far-left tool slot under the sun counter, plant card board narrowed from the old wide rail, and zombie card board expanded into the freed right-side space.
-- Centralized HUD rects in `src/game/input.js` so rendered panels, click hitboxes, and layout tests share one coordinate source.
-- Reworked the center status column: timer and brain counters now sit as compact aligned chips above a wider pressure meter.
-- Enlarged zombie card hitboxes and card art scale so the zombie selection side reads as a first-class control surface instead of a small cramped rail.
-- Updated browser click scenarios for the new zombie-card position.
-- Ran `npm test`: PASS, 51 tests.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-layout-actions.json`: PASS with no missing assets and no console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-assets-actions.json`: PASS with no missing assets and no console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`: PASS, confirming plant selection, placement, zombie selection, and deployment still work.
-- Screenshot checked: `test-results/local-versus-game.png` shows the smaller plant board, left shovel tool slot, compact timer/brain/pressure column, and larger zombie board.
-
-## 2026-05-18 Visual Polish Verification
-
-- Lowered 小鬼僵尸 brain cost to `40` and verified the command-layer balance regression.
-- Locked HUD hit boxes and drawing to the same layout contract: left tool shelf, compact plant panel, aligned timer/brain/pressure column, and larger zombie card panel.
-- Added generated-asset coverage for the visual polish pass, including padded sun, brain counter, house strip, mower, repeater, armor drops, and generated zombie death sheets.
-- Changed zombie death effects to stay ground-anchored and fall downward instead of moving upward.
-- Added multi-window browser verification actions for 1280x720, 1440x900, and a larger viewport, with logical Canvas click scaling.
-- Ran `npm test`: PASS, 59 tests.
-- Ran `git diff --check`: PASS.
-- Ran browser verification for normal, layout, visual assets, unit states, sun, feedback/eating, expanded units, special plants, and spritesheet frame-diff scenarios: PASS with no missing assets and no console errors.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-1280-actions.json`: PASS, screenshot `test-results/visual-polish-1280.png`.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-1440-actions.json`: PASS, screenshot `test-results/visual-polish-1440.png`.
-- Ran `node scripts/verify-browser.js http://localhost:5174 tests/browser-visual-polish-large-actions.json`: PASS, screenshot `test-results/visual-polish-large.png`.
-- Screenshot checked: sun icon is complete, shovel sits in its tool slot, timer/brain/pressure are aligned, zombie deploy lane matches the five grass rows, house and mowers stay left of the lawn, and the basic zombie walk animation reports `changedPixels: 3000`.
-- Still open for a later gameplay design pass: remove automatic zombie waves, redesign full two-player versus economy, and rebalance plants so the plant side cannot win too quickly.
-
-## 2026-05-19 Local Versus Rules Pass
-
-- Added Chinese design and implementation notes for the local-versus rule pass under `docs/superpowers/specs/` and `docs/superpowers/plans/`.
-- Changed director behavior from automatic zombie waves to a pressure-only model: `autoWaves: false`, no warning, no automatic `spawnZombie()`.
-- Manual zombie deployment now increments `director.manualDeployCount`, clears warning state, and nudges the pressure meter.
-- Zombie brain now regenerates continuously at a fixed local-versus rate and is capped by `ROUND.maxZombieBrain`.
-- Browser verification now supports `directorAutoWaves`, `maxWaveCount`, and `minManualDeployCount` expectations.
-- Ran `npm test`: PASS, 60 tests.
-- Ran `git diff --check`: PASS.
-- Ran browser verification for normal, layout, visual-polish, sun, feedback/eating, and spritesheet frame-diff scenarios: PASS with no missing assets and no console errors.
-- Normal browser state confirmed `autoWaves: false`, `manualDeployCount: 1`, `waveCount: 0`, and one manually deployed walking zombie.
-- Still open for the next gameplay pass: deeper plant/zombie balance tuning and clearer two-player turn/role prompts in the HUD.
-
-## 2026-05-19 Balance and Versus Tempo Pass
-
-- Committed the previous visual and local-versus foundation before starting the balance pass: `02002e0 feat: add local versus visual and rule foundation`.
-- Slowed plant-side snowballing: passive sky sun cadence is now 10s, sunflowers and twin sunflowers produce less frequently, and core shooter damage was reduced.
-- Strengthened zombie-side sustained pressure: brain regeneration is faster, max brain is higher, and manual mixed deployments can earn a short-window combo brain refund.
-- Added zombie combo state to serialized debug output so browser checks can verify combo count, last deployed type, and row.
-- Added command/system/state regressions for combo refund, delayed passive sky sun, updated sunflower production cadence, and serialized zombie combo resources.
-- Added `tests/browser-versus-balance-actions.json` to verify two manual zombie deployments, combo refund, manual-only pressure, and spritesheet walking zombies in the browser.
-- Ran `npm test`: PASS, 62 tests.
-- Ran `git diff --check`: PASS.
-- Ran browser verification for normal, versus-balance, and visual-polish 1280 scenarios: PASS with no missing assets and no console errors.
-- In-app browser screenshot checked: `test-results/in-app-balance-check.png` opens at `http://localhost:5174/` with no console errors.
-
-## 2026-05-19 Timer Clarity and Zombie Pressure Pass
-
-- Clarified the current win condition: plant side wins by surviving the full countdown and clearing the field; zombie side wins by breaking through the left defense.
-- Made the timer HUD explicitly read `剩余 210s` instead of a bare number, and added the win condition to `render_game_to_text()` for browser verification.
-- Shifted tempo further toward the zombie side: round duration is now 210s, initial plant sun is lower, passive sky sun and sunflower production are slower, and core shooter damage was reduced again.
-- Strengthened zombie pressure: initial brain is higher, brain regen and max brain are higher, combo refund is larger, zombie stats were modestly buffed, and the final minute gives zombies extra brain regen and movement speed.
-- Updated tests and browser scenarios for the new economy and timer rules.
-- Ran `npm test`: PASS, 63 tests.
-- Ran `git diff --check`: PASS.
-- Ran browser verification for versus-balance, sun, normal flow, and visual-polish 1280 scenarios: PASS with no missing assets and no console errors.
-- In-app browser was hard-refreshed after detecting cached old `index.html`; screenshot confirms the visible HUD now shows `剩余 210s`, initial sun `125`, and initial brain `120`.
-
-## 2026-05-20 Persistent Local Server
-
-- Root cause: prior `localhost:5174` runs depended on Codex/Terminal foreground processes, so the service disappeared when those processes ended.
-- Added `scripts/com.pvz.localserver.plist` to run `/usr/bin/python3 -m http.server 5174 --bind 127.0.0.1 --directory /Users/chaucermini/Code/PVZ/.worktrees/local-versus-game` as a user LaunchAgent.
-- Loaded the service with `launchctl bootstrap gui/501 ...` and started it with `launchctl kickstart -k gui/501/com.pvz.localserver`.
-- Verified `launchctl print gui/501/com.pvz.localserver`: state `running`, pid `23165`.
-- Verified `curl -I http://localhost:5174/`: HTTP 200.
-- Refreshed in-app browser: page title `花园攻防本地双人版`, console errors empty.
-
-## 2026-05-20 LAN Server Exposure
-
-- User explicitly approved exposing the PVZ local server to the LAN.
-- Changed `scripts/com.pvz.localserver.plist` from `--bind 127.0.0.1` to `--bind 0.0.0.0`.
-- Reloaded LaunchAgent with `launchctl bootout`, `launchctl bootstrap`, and `launchctl kickstart -k`.
-- Verified actual service arguments include `--bind 0.0.0.0`.
-- Verified `curl -I http://localhost:5174/`: HTTP 200.
-- Verified `curl -I http://192.168.2.15:5174/`: HTTP 200.
-- Refreshed in-app browser: page title `花园攻防本地双人版`, console errors empty.
+- 当前实现：核心状态、命令队列、模拟系统、输入映射、Canvas 渲染、素材管线、浏览器验证和 LAN 在线房间基础已经写入。
+
+## 验证
+
+- 运行 `npm test`：通过，13 个测试。
+- 针对 `http://localhost:5173` 运行浏览器验证：通过。
+- 浏览器状态包含 2 个植物、1 个僵尸和活动弹丸。
+- console 错误：无。
+- 截图检查确认卡牌、5 行草坪、植物、僵尸、弹丸、投放区和状态栏可见。
+- 将程序化单位、卡牌和弹丸绘制替换为从 `/assets` 加载的素材。
+- 针对 `http://localhost:5174` 运行素材替换后的浏览器验证：通过。
+- 截图检查确认植物卡牌、僵尸卡牌、已放置植物、已投放僵尸和弹丸使用下载素材包。
+
+## 后续建议
+
+- 基于现有命令队列继续补 WebSocket 房间传输。
+- 增加可选的用户自定义素材 manifest：`assets/manifest.json`。
+- 增加短局、标准局、长局三套平衡预设。
+
+## 2026-05-05 玩法与表现升级迭代
+
+- 新增被动阳光和向日葵产出的可点击阳光掉落。
+- 新增每路一次性割草机，作为突破前的失误缓冲。
+- 新增 director 波次、泳道预警、自动压力刷怪、波次数和威胁条。
+- 新增樱桃炸弹和小鬼僵尸，补充战术选择。
+- 强化 HUD、冷却和资源反馈、泳道预警、阴影、小车、阳光和爆炸效果。
+- 运行 `npm test`：通过，18 个测试。
+- 运行 `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`：通过。
+- 截图检查确认扩展卡牌、可收集阳光、小车、压力条、单位、弹丸和状态栏可见。
+
+## 2026-05-05 素材动画和音频迭代
+
+- 用素材包 `小推车.png` 替换手绘小车。
+- 新增 Web Audio 程序化背景音乐和种植、收阳光、僵尸生成、命中、啃食、掉甲、爆炸、小车、波次预警音效。
+- 新增普通、小鬼、路障、铁桶、冲刺僵尸的啃食动画映射。
+- 增加植物被啃食形变、咬痕和更强受击反馈。
+- 新增护甲掉落状态，带甲僵尸达到阈值后切换无甲外观，并在脚边显示掉落护甲。
+- 扩展浏览器验证脚本，支持命令驱动场景和 `eating` / `armorDropped` 状态期望。
+- 运行 `npm test`：通过，19 个测试。
+- 运行普通流程和反馈流程浏览器验证：通过。
+- 截图检查确认素材小车、啃食动画、植物形变、咬痕和护甲掉落反馈可见。
+
+## 2026-05-05 真实 GIF 和 OGG 音频修复
+
+- 用 `assets/音效` 下的真实 OGG 播放替代上一版程序化振荡器音频。
+- 将素材映射拆分为 `plantIdle`、`zombieWalk`、`zombieEat`、`zombieFeedback`、`ui`、`sfx`、`music`。
+- 移除持续人工摆动；僵尸通过 `zombie.eating` 在走路和啃食 GIF 间切换，植物只保留短促咬合压缩。
+- 在 `render_game_to_text()` 中增加音频调试状态，浏览器验证会在关键 GIF / OGG 缺失或音频加载错误时失败。
+- 运行 `npm test`：通过，20 个测试。
+- 运行普通流程和反馈流程浏览器验证：通过，`audioUnlocked: true`、`musicActive: true`，无缺失素材和 console 错误。
+
+## 2026-05-05 阳光反馈和非人声背景音乐修复
+
+- 背景音乐改为低音量 `rain.ogg`，并保留 `phonograph.ogg` 兜底。
+- 阳光拾取物绘制到植物上方，显示拾取金额，向日葵产出的阳光位于植物头部上方。
+- 新增 `+25` 收集反馈，并在状态序列化中带上金额用于浏览器验证。
+- 只给真实场上植物保留克制待机摆动，卡牌图标保持静止。
+- 增加向日葵产量、收集反馈金额、非人声音乐映射和多帧僵尸走路 GIF 测试。
+- 运行 `npm test`：通过，24 个测试。
+- 运行普通、阳光、反馈浏览器流程：通过。
+- 截图检查确认向日葵阳光 `25`、收集 `+25`、走路僵尸和场上单位可见。
+
+## 2026-05-05 用户指定背景音乐和阳光余额可见性
+
+- 背景音乐改为 `assets/音效/ZombiesOnYourLawn.ogg`。
+- `mainmusic.mo3` 未接入浏览器音频路径，因为 HTMLAudio 无法原生播放 MO3，需要额外解码或转换。
+- 新增顶层植物方阳光余额徽标，避免当前阳光总量被种子卡遮挡。
+- 增加 HUD 附近 `+/-` 阳光变化反馈，分别表示种植消耗和收集收入。
+- 更新种植和阳光收集状态文本，包含花费、获得和当前余额。
+- 运行 `npm test`：通过，24 个测试。
+- 运行阳光浏览器验证：通过，当前阳光 125 且正向阳光变化反馈可验证。
+
+## 2026-05-05 僵尸 GIF 选择和战斗可读性
+
+- 集中管理僵尸视觉选择，让 `walk` 和 `eat` 状态直接映射到对应场景 GIF。
+- 修复带甲僵尸在啃食状态下仍保留原啃食 GIF，例如 `路障僵尸啃食.gif`。
+- 在序列化中增加 `visualState` 和 `visualAsset`，用于浏览器验证。
+- 增加 `普通僵尸走路.gif`、`路障僵尸啃食.gif` 的单元和浏览器断言。
+- 曾加入漂浮伤害数字和 `击倒` 反馈，随后按用户要求移除所有数值伤害显示。
+- 保留血条、命中闪烁、啃食 GIF、护甲掉落和非数值 `击倒` 反馈。
+- 运行 `npm test`：通过，25 个测试。
+- 普通、阳光和反馈浏览器流程通过，截图中不再显示 `-24` / `-26` 伤害数字。
+
+## 2026-05-05 素材驱动基础版
+
+- 新增 `ASSET_MANIFEST`，同时保留 `ASSET_PATHS` 兼容层，覆盖场景、UI、植物、僵尸、弹丸和音频分组。
+- Canvas 背景切到白天场景素材，HUD 优先使用种子商店、阳光计数器、铲子槽和 FlagMeter 素材。
+- 序列化新增 `visualAssets.scene` 和 `visualAssets.ui`，浏览器验证可以证明 Canvas 使用真实素材路径。
+- 用 `zombieDeath` effect 替换僵尸击倒文字，绘制 `僵尸死.gif`、`小鬼死亡.gif`、`橄榄球僵尸死.gif` 等死亡 GIF。
+- 增加视觉素材接线和单位死亡状态 GIF 浏览器场景。
+- 运行 `npm test`：通过，26 个测试。
+- 普通、反馈、阳光和视觉素材流程通过。
+
+## 2026-05-07 扩展单位和特殊状态
+
+- 植物和僵尸卡牌栏改为紧凑双行布局，容纳更多单位。
+- 新增植物：`repeater`、`twinSunflower`、`torchwood`、`potatoMine`、`jalapeno`。
+- 新增僵尸：`flag`、`screen`、`zamboni`。
+- 接入新植物、新僵尸、火豌豆、土豆雷武装态、铁门僵尸、冰车和火爆辣椒相关素材与音效。
+- 增加 `plant.visualState` 和 `plant.visualAsset` 序列化。
+- 新增 `rowFire` 清行视觉反馈，并在截图中可见。
+- 运行 `npm test`：通过，32 个测试。
+- 普通、阳光、反馈、扩展单位、视觉素材、单位死亡和特殊植物浏览器场景全部通过。
+
+## 2026-05-08 布局和僵尸 GIF 验证
+
+- 将 HUD 卡牌热区和阳光计数器移到独立槽位，避免植物余额覆盖种子卡。
+- 新增小车专用泳道 overlay，并调整白天背景裁剪，避免小车行被房屋纹理干扰。
+- 每种可玩僵尸在走路和啃食状态下都保留自己的场景 GIF，护甲掉落不再退回普通僵尸外观。
+- 僵尸绘制记录状态键，并序列化 `animationSource: "gif"` 供浏览器验证。
+- 增加布局和 GIF 动画测试，包括浏览器像素差异检查。
+- 运行 `npm test`：通过，35 个测试。
+- 布局、GIF 动画、普通、阳光、反馈、视觉素材、扩展单位和特殊植物场景通过。
+
+## 2026-05-11 到 2026-05-14 游戏工作室体验和 UI 修复
+
+- 使用 Chrome / Playwright 试玩开局流程，发现阳光堆叠和自动波次行选择影响节奏。
+- 增加点击阳光计数器一键收集全部可见阳光的快捷方式，同时保留单个 `+amount` 反馈。
+- 分散同源阳光拾取物，降低重叠；director 优先攻击已有植物防线的行。
+- 新增 `started` 模拟标志，计时器、资源、波次和僵尸移动等待玩家第一次交互后才开始。
+- 新增 `准备开始` overlay，并说明选择卡牌会启动计时器。
+- 合并相近同类阳光拾取物，最高合并到 100，降低中期视觉噪音。
+- 生成并接入 `generated-assets/` 原创素材集，包括草坪、卡牌、资源、状态板、阳光、小车、铲子、弹丸、特效、植物条和僵尸走路/啃食/死亡条。
+- 新增 `SPRITESHEET_MANIFEST`，Canvas 优先使用生成 PNG spritesheet，保留本地 `assets/...` GIF / PNG 兜底。
+- 重建 HUD 固定槽位，移除卡牌文字，仅保留图标、费用和冷却。
+- 用 Canvas 绘制稳定面板替代拉伸的生成 HUD / status / overlay 面板。
+- 新增左侧房屋立面和半透明小车车库槽。
+- 运行 `npm test`：从 39 个测试增长到 46 个测试，均通过。
+- 多个浏览器场景通过，截图确认准备 overlay、开局摆放、中期阳光/战斗、啃食/护甲反馈和爆炸效果清晰。
+
+## 2026-05-13 到 2026-05-17 对齐、素材和护甲审计
+
+- 重新生成并接入 `generated-assets/scene/house-left.png`，让房屋和小车区域更自然。
+- 新增 `generated-assets/ui/sun-padded.png`，避免阳光图标在计数器或拾取物中裁切。
+- 调整脑力计数器、时间和压力面板，让中央信息列更紧凑。
+- 将植物和僵尸锚点固定到格子地面，修复精灵图和网格不贴合的问题。
+- 防止资源不足或冷却中的卡牌在命令层被选中。
+- 移除笨重小车车库面板，让小车位于左侧石路上。
+- 强制所有僵尸死亡动画使用生成 spritesheet，不再回退旧 GIF 死亡素材。
+- 收紧植物和僵尸卡牌构图，移除场上血条，重建 padded 阳光和小车图标。
+- 修复选中卡牌 overlay 遮挡单位图的问题，改为 Canvas 描边高亮。
+- 精简底部状态栏，降低掉落护甲尺寸并移动到地面。
+- 独立 code review 后修复关键问题：成功种植或投放后清除对应选中卡，避免冷却或资源不足卡牌仍保持选中。
+- 将 `/assets` 加入 `.gitignore`，避免提交用户本地素材包绝对 symlink。
+- 运行 `python3 scripts/remaster-imagegen-assets.py`：通过。
+- 运行 `npm test`：通过，最高增长到 51 个测试。
+- 布局、反馈、视觉素材、单位状态、扩展单位和 spritesheet 动画浏览器验证通过。
+
+## 2026-05-15 单个阳光收集反馈修复
+
+- 根因：收集一个阳光会同时创建 `collectSun` effect 和正向 `sunDelta` effect，导致同一个 `+25` 渲染两次。
+- 先增加失败回归，确认一个阳光拾取物产生 2 个正向金额反馈。
+- 从 `collectSun` 和 `collectAllSun` 中移除正向 `sunDelta` effect，保留植物花费时的负向 `sunDelta`。
+- 更新阳光浏览器验证，要求收集期间没有正向 `sunDelta`。
+- 运行 `npm test`：通过，47 个测试。
+- 运行 `node scripts/verify-browser.js http://localhost:5174 tests/browser-sun-actions.json`：通过。
+- 定向 Playwright 检查通过：状态中只有一个正向 `collectSun +25` effect，没有正向 `sunDelta`。
+
+## 2026-05-16 到 2026-05-17 僵尸死亡和护甲掉落修复
+
+- 根因：`scripts/remaster-imagegen-assets.py` 仍通过旧的 `transformed_frames(..., "death")` 路径生成部分僵尸死亡条，画面像程序化淡出。
+- 所有可玩僵尸死亡条改为 Codex imagegen atlas 帧或静态僵尸裁剪生成，并加入掉落物、倒下、尘土和残留帧。
+- 强制 `ASSET_PATHS.zombieDeath` 只指向生成 spritesheet，并增加测试阻止旧 GIF fallback 和旧死亡生成路径。
+- 根因：`armor-cone.png` 和 `armor-runner.png` 曾复用 bucket 裁剪，导致路障和橄榄球僵尸掉落错误护甲。
+- 重新从 Codex 生成素材裁剪路障帽和橄榄球头盔，旋转为落地碎片并增加裂纹。
+- 集中运行时护甲掉落资源查找 `armorDropAssetFor()`，并在 `render_game_to_text()` 序列化 `visualAsset`。
+- 强化测试：四类护甲掉落素材必须互不相同，每类带甲僵尸必须发出匹配的 `hatType` 和资源路径。
+- 运行 `python3 scripts/remaster-imagegen-assets.py`：通过。
+- 运行 `npm test`：通过，51 个测试。
+- 反馈浏览器验证通过，截图和 contact sheet 确认路障、铁桶、铁门、橄榄球头盔是不同碎片。
+
+## 2026-05-17 HUD 卡牌区再平衡
+
+- 使用 Game Studio UI pass 调整顶部 HUD：铲子移到阳光计数器下方单独工具槽，植物卡牌板收窄，僵尸卡牌板扩大。
+- 在 `src/game/input.js` 集中 HUD 矩形，渲染面板、点击热区和布局测试共享同一坐标来源。
+- 中心状态列改为紧凑的时间、脑力和压力组合。
+- 放大僵尸卡牌点击区和图像比例，让僵尸选择侧更像主要操作面。
+- 更新浏览器点击场景以适配新的僵尸卡牌位置。
+- 运行 `npm test`：通过，51 个测试。
+- 布局、视觉素材和普通浏览器流程通过。
+
+## 2026-05-18 视觉精修验证
+
+- 小鬼僵尸脑力成本降到 `40`，并用命令层平衡回归验证。
+- 锁定 HUD 命中框和绘制契约：左侧工具架、紧凑植物面板、对齐的时间/脑力/压力列和更大的僵尸卡牌面板。
+- 增加视觉精修所需生成素材覆盖，包括 padded 阳光、脑力计数器、房屋条、小车、双发射手、护甲掉落和生成僵尸死亡条。
+- 僵尸死亡 effect 改为贴地并向下倒，不再向上漂。
+- 增加 1280x720、1440x900 和大窗口浏览器动作，支持逻辑 Canvas 点击缩放。
+- 运行 `npm test`：通过，59 个测试。
+- 运行 `git diff --check`：通过。
+- 普通、布局、视觉素材、单位状态、阳光、反馈、扩展单位、特殊植物和 spritesheet 动画浏览器验证全部通过。
+- 运行三种视觉精修视口验证：均通过，并生成 `test-results/visual-polish-1280.png`、`test-results/visual-polish-1440.png`、`test-results/visual-polish-large.png`。
+- 后续仍待玩法专题处理：移除自动僵尸波次、重做完整双人经济、重新平衡植物方优势。
+
+## 2026-05-19 本地双人规则和平衡
+
+- 在 `docs/superpowers/specs/` 和 `docs/superpowers/plans/` 下增加中文设计和实施说明。
+- director 从自动僵尸波次改为压力模型：`autoWaves: false`，不再 warning，不再自动 `spawnZombie()`。
+- 手动僵尸投放会增加 `director.manualDeployCount`，清除 warning 状态，并提高压力条。
+- 僵尸脑力按固定本地对战速率持续恢复，并受 `ROUND.maxZombieBrain` 限制。
+- 浏览器验证新增 `directorAutoWaves`、`maxWaveCount`、`minManualDeployCount` 期望。
+- 运行 `npm test`：通过，60 个测试。
+- 运行 `git diff --check`：通过。
+- 普通、布局、视觉精修、阳光、反馈和 spritesheet 动画浏览器验证全部通过。
+- 普通浏览器状态确认 `autoWaves: false`、`manualDeployCount: 1`、`waveCount: 0`，并有 1 个手动投放的走路僵尸。
+- 平衡迭代中降低植物滚雪球速度，提高僵尸持续压力和 combo 脑力返还。
+- 新增 `tests/browser-versus-balance-actions.json`，验证两次手动投放、combo 返还、手动压力和 spritesheet 走路僵尸。
+- 计时器 HUD 明确显示 `剩余 210s`，并在 `render_game_to_text()` 中加入胜利条件。
+- 回合时长、初始阳光、被动阳光、向日葵产出、射手伤害、僵尸脑力、combo 返还和最后一分钟压力均完成调优。
+- 运行 `npm test`：通过，63 个测试。
+- 浏览器确认 HUD 显示 `剩余 210s`、初始阳光 `125`、初始脑力 `120`。
+
+## 2026-05-20 本地服务持久化和 LAN 暴露
+
+- 根因：之前的 `localhost:5174` 依赖 Codex / Terminal 前台进程，进程结束后服务消失。
+- 新增 `scripts/com.pvz.localserver.plist`，通过用户 LaunchAgent 启动 `/usr/bin/python3 -m http.server 5174`。
+- 使用 `launchctl bootstrap`、`launchctl kickstart -k` 加载并启动服务。
+- 验证 `launchctl print gui/501/com.pvz.localserver`：状态为 `running`，pid 为 `23165`。
+- 验证 `curl -I http://localhost:5174/`：HTTP 200。
+- 刷新 in-app browser：标题为 `花园攻防本地双人版`，console 错误为空。
+- 用户明确批准将 PVZ 本地服务暴露到 LAN。
+- 将 `scripts/com.pvz.localserver.plist` 从 `--bind 127.0.0.1` 改为 `--bind 0.0.0.0`。
+- 重新加载 LaunchAgent，并确认实际服务参数包含 `--bind 0.0.0.0`。
+- 验证 `curl -I http://localhost:5174/` 和 `curl -I http://192.168.2.15:5174/`：均为 HTTP 200。
+
+## 2026-05-21 在线对战基础
+
+- 在现有隔离 Codex worktree 中创建分支 `codex/online-battle`。
+- 新增零依赖 LAN 在线房间服务器，服务器持有权威游戏状态、双人植物/僵尸阵营分配、命令校验、server tick、快照和静态文件服务。
+- 新增浏览器在线控件，支持创建房间、输入房间码加入、选择植物方或僵尸方。
+- 输入处理改为在线模式下 selection 保持本地，真实 gameplay command 发送到房间服务器。
+- 新增 `npm run online -- <port>` 用于 LAN 对战，新增 `npm run verify:online-browser -- <url>` 用于双页面在线验证。
+- 增加 room 行为、HTTP endpoints、本地在线 selection 和阵营命令过滤的 TDD 覆盖。
+- 运行 `npm test`：通过，72 个测试。由于 sandbox 会阻止本地端口绑定，通过的完整测试是在已批准的 sandbox escalation 下执行。
+- 运行 `node scripts/verify-browser.js http://127.0.0.1:5191 tests/browser-actions.json`：通过，无 console 错误和缺失素材。
+- 运行 `node scripts/verify-online-browser.js http://127.0.0.1:5191`：通过。两个 Chromium 页面加入房间 `QOBV`，植物方放置 `peashooter`，僵尸方投放 `basic`，两端收到一致的植物和僵尸实体。
