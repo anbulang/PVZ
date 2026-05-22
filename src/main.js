@@ -30,6 +30,7 @@ const onlineClient = createOnlineClient({
   state,
   localDispatch: (command) => enqueueCommand(state, command),
   onOnlineChange: () => renderAppFlow(),
+  autoJoin: false,
 });
 let accumulator = 0;
 let lastTime = performance.now();

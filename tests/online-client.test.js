@@ -52,6 +52,13 @@ test("game view hides legacy create and join controls", () => {
   assert.match(css, /#game-view[\s\S]*display:\s*none\s*;/, "legacy game controls must be display none");
 });
 
+test("room message spans footer columns and wraps invite URLs", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.room-message\s*{[\s\S]*grid-column:\s*1\s*\/\s*-1\s*;/, "room message should span footer columns");
+  assert.match(css, /\.room-message\s*{[\s\S]*overflow-wrap:\s*anywhere\s*;/, "room message should wrap long invite URLs");
+});
+
 test("main flow creates a visible room message target when markup omits it", () => {
   const script = fs.readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 
@@ -236,6 +243,25 @@ test("online client exposes hydrated online room state", () => {
   assert.equal(client.getOnline().roomCode, "ROOM");
 });
 
+test("online client can defer invite auto join until a profile is saved", async () => {
+  const socket = new FakeSocket();
+  createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "?room=ROOM" },
+    historyLike: null,
+    createSocket: () => socket,
+    autoJoin: false,
+  });
+
+  await flushMicrotasks();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(socket.sent.some((message) => message.type === "joinRoom"), false);
+});
+
 test("online client notifies online changes after hydrate room and game snapshots", async () => {
   const socket = new FakeSocket();
   const changes = [];
@@ -337,4 +363,8 @@ function fakeRoomSnapshot({ roomCode, side }) {
       zombie: { clientId: "zombie-device", online: true, ready: false, playAgainReady: false, profile: null, disconnectedAt: null },
     },
   };
+}
+
+async function flushMicrotasks() {
+  for (let i = 0; i < 6; i += 1) await Promise.resolve();
 }

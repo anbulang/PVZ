@@ -14,6 +14,7 @@ export function createOnlineClient({
   historyLike = typeof history !== "undefined" ? history : null,
   createSocket = (url) => new WebSocket(url),
   onOnlineChange = () => {},
+  autoJoin = true,
 } = {}) {
   let online = null;
   let localSelection = null;
@@ -44,7 +45,7 @@ export function createOnlineClient({
     setPlayAgainReady(!current).catch((error) => showError(error));
   });
 
-  autoJoinFromUrl().catch((error) => showError(error));
+  if (autoJoin) autoJoinFromUrl().catch((error) => showError(error));
   updatePanel();
 
   return {
