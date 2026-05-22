@@ -226,7 +226,7 @@ function serializePlayer(room, side) {
     online: Boolean(player.online),
     ready: Boolean(player.ready),
     playAgainReady: Boolean(player.playAgainReady),
-    profile: player.profile ?? { playerName: "玩家", avatarId: "sunflower" },
+    profile: { ...(player.profile ?? { playerName: "玩家", avatarId: "sunflower" }) },
     disconnectedAt: player.disconnectedAt ?? null,
   };
 }

@@ -55,6 +55,16 @@ test("online room serializes lightweight player profiles", () => {
   assert.deepEqual(snapshot.room.players.zombie.profile, { playerName: "Zombie Two", avatarId: "cone" });
 });
 
+test("online room snapshots do not expose mutable player profile references", () => {
+  const room = createOnlineRoom({ code: "SAFE" });
+  joinOnlineRoom(room, { clientId: "plant-device", requestedSide: "plant", profile: { playerName: "Plant One", avatarId: "sunflower" } });
+
+  const snapshot = serializeOnlineRoom(room, "plant-device");
+  snapshot.room.players.plant.profile.playerName = "Mutated";
+
+  assert.equal(room.clients.get("plant-device").profile.playerName, "Plant One");
+});
+
 test("online room applies commands from both devices to one authoritative state", () => {
   const room = createPlayingRoom({ code: "ROOM2" });
   const plant = room.clients.get("plant-device");

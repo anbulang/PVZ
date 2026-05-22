@@ -6,6 +6,7 @@ import {
   applyOnlineSnapshot,
   applyRoomSnapshot,
   canSendOnlineCommand,
+  createOnlineClient,
   loadOnlineIdentity,
   onlinePanelViewModel,
   roomMatchesJoinRequest,
@@ -131,6 +132,36 @@ test("client join matcher accepts server-assigned remaining side", () => {
   assert.equal(roomMatchesJoinRequest({ roomCode: "OTHER", side: "zombie" }, "room"), false);
 });
 
+test("online client sends player profiles when hosting and joining rooms", async () => {
+  const socket = new FakeSocket();
+  const state = createGameState();
+  const client = createOnlineClient({
+    state,
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  await client.hostRoom("plant", { playerName: "Plant One", avatarId: "sunflower" });
+  await client.joinRoom("room", "zombie", { playerName: "Zombie Two", avatarId: "cone" });
+
+  assert.deepEqual(socket.sent.find((message) => message.type === "createRoom"), {
+    type: "createRoom",
+    side: "plant",
+    profile: { playerName: "Plant One", avatarId: "sunflower" },
+  });
+  assert.deepEqual(socket.sent.find((message) => message.type === "joinRoom"), {
+    type: "joinRoom",
+    roomCode: "ROOM",
+    side: "zombie",
+    profile: { playerName: "Zombie Two", avatarId: "cone" },
+    clientId: "client-test",
+  });
+});
+
 class MapStorage {
   constructor() {
     this.map = new Map();
@@ -143,4 +174,59 @@ class MapStorage {
   setItem(key, value) {
     this.map.set(key, value);
   }
+}
+
+class FakeSocket {
+  static OPEN = 1;
+
+  constructor() {
+    this.readyState = FakeSocket.OPEN;
+    this.sent = [];
+    this.listeners = new Map();
+    queueMicrotask(() => this.emit("open", {}));
+  }
+
+  addEventListener(type, listener) {
+    const listeners = this.listeners.get(type) ?? [];
+    listeners.push(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "client-test" }));
+    }
+    if (message.type === "createRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "roomSnapshot", room: fakeRoomSnapshot({ roomCode: "ROOM", side: message.side }) }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "roomSnapshot", room: fakeRoomSnapshot({ roomCode: message.roomCode, side: message.side }) }));
+    }
+  }
+
+  emit(type, event) {
+    for (const listener of this.listeners.get(type) ?? []) listener(event);
+  }
+
+  emitMessage(message) {
+    this.emit("message", { data: JSON.stringify(message) });
+  }
+}
+
+function fakeRoomSnapshot({ roomCode, side }) {
+  return {
+    roomCode,
+    phase: "ready",
+    side,
+    peerCount: 2,
+    commandSequence: 0,
+    reconnectTimeoutMs: 60000,
+    reconnectRemainingMs: null,
+    players: {
+      plant: { clientId: "plant-device", online: true, ready: false, playAgainReady: false, profile: null, disconnectedAt: null },
+      zombie: { clientId: "zombie-device", online: true, ready: false, playAgainReady: false, profile: null, disconnectedAt: null },
+    },
+  };
 }
