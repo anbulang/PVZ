@@ -37,6 +37,9 @@ test("index html exposes the online app shell views", () => {
   for (const id of requiredIds) {
     assert.match(html, new RegExp(`id=["']${id}["']`), `missing #${id}`);
   }
+  assert.match(html, /id=["']login-continue["'][^>]*type=["']button["']/, "#login-continue must not submit before Task 4 wiring");
+  assert.match(html, /class=["']seat-card["'][^>]*data-side=["']plant["']/, "missing plant seat hook");
+  assert.match(html, /class=["']seat-card["'][^>]*data-side=["']zombie["']/, "missing zombie seat hook");
 });
 
 test("game view hides legacy create and join controls", () => {
