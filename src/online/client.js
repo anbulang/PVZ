@@ -13,6 +13,7 @@ export function createOnlineClient({
   locationLike = typeof location !== "undefined" ? location : null,
   historyLike = typeof history !== "undefined" ? history : null,
   createSocket = (url) => new WebSocket(url),
+  onOnlineChange = () => {},
 } = {}) {
   let online = null;
   let localSelection = null;
@@ -48,6 +49,7 @@ export function createOnlineClient({
 
   return {
     dispatchCommand,
+    getOnline: () => online,
     getSelection: () => (online?.roomCode ? localSelection : state.selection),
     hostRoom,
     hydrateSnapshot,
@@ -111,6 +113,7 @@ export function createOnlineClient({
     if (options.clearSelection) localSelection = null;
     applyOnlineSnapshot(state, snapshot, localSelection);
     updatePanel();
+    onOnlineChange(online);
   }
 
   async function ensureConnected() {
@@ -151,12 +154,14 @@ export function createOnlineClient({
       applyRoomSnapshot(state, room, localSelection);
       if (storage && room.clientId && room.roomCode) saveOnlineIdentity(storage, { clientId: room.clientId, roomCode: room.roomCode, side: room.side });
       updatePanel();
+      onOnlineChange(online);
       resolveRoomWaiters(room);
       return;
     }
     if (message.type === "gameSnapshot") {
       applyOnlineSnapshot(state, { state: message.state, online }, localSelection);
       updatePanel();
+      onOnlineChange(online);
       return;
     }
     if (message.type === "error") {

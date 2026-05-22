@@ -200,6 +200,33 @@ test("online client sends player profiles when hosting and joining rooms", async
   });
 });
 
+test("online client exposes hydrated online room state", () => {
+  const state = createGameState();
+  const client = createOnlineClient({
+    state,
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: null,
+    historyLike: null,
+  });
+
+  assert.equal(client.getOnline(), null);
+
+  client.hydrateSnapshot({
+    state: createGameState(),
+    online: {
+      roomCode: "ROOM",
+      phase: "ready",
+      side: "plant",
+      peerCount: 2,
+      players: {},
+    },
+  });
+
+  assert.equal(client.getOnline().roomCode, "ROOM");
+});
+
 class MapStorage {
   constructor() {
     this.map = new Map();

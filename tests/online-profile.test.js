@@ -43,6 +43,12 @@ test("view URL helpers preserve room codes", () => {
   assert.equal(gameUrl("/index.html", "room"), "/index.html?view=game&room=ROOM");
 });
 
+test("login view keeps pending room codes for invite links", () => {
+  const state = nextViewState({ locationLike: { search: "?view=game&room=ABCD" }, profile: null, online: null });
+  assert.equal(state.view, "login");
+  assert.equal(state.pendingRoomCode, "ABCD");
+});
+
 class MapStorage {
   constructor() {
     this.map = new Map();
