@@ -20,7 +20,7 @@ const roomCreateButton = document.querySelector("#room-create");
 const roomJoinButton = document.querySelector("#room-join");
 const roomReadyButton = document.querySelector("#room-ready");
 const roomCopyLinkButton = document.querySelector("#room-copy-link");
-const roomMessage = document.querySelector("#room-message");
+const roomMessage = ensureRoomMessage();
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const srState = document.querySelector("#screen-reader-state");
@@ -89,7 +89,7 @@ function bindAppFlowControls() {
   loginContinue?.addEventListener("click", handleLogin);
   roomCreateButton?.addEventListener("click", () => {
     const profile = ensurePlayerProfile();
-    onlineClient.hostRoom("plant", profile).catch((error) => showRoomMessage(`创建房间失败：${error.message}`));
+    onlineClient.hostRoom("plant", profile).then(clearRoomMessage).catch((error) => showRoomMessage(`创建房间失败：${error.message}`));
   });
   roomJoinButton?.addEventListener("click", () => {
     const profile = ensurePlayerProfile();
@@ -98,12 +98,12 @@ function bindAppFlowControls() {
       showRoomMessage("请输入房间码。");
       return;
     }
-    onlineClient.joinRoom(roomCode, "zombie", profile).catch((error) => showRoomMessage(`加入房间失败：${error.message}`));
+    onlineClient.joinRoom(roomCode, "zombie", profile).then(clearRoomMessage).catch((error) => showRoomMessage(`加入房间失败：${error.message}`));
   });
   roomReadyButton?.addEventListener("click", () => {
     const online = onlineClient.getOnline();
     const currentReady = online?.players?.[online.side]?.ready ?? false;
-    onlineClient.setReady(!currentReady).catch((error) => showRoomMessage(`准备失败：${error.message}`));
+    onlineClient.setReady(!currentReady).then(clearRoomMessage).catch((error) => showRoomMessage(`准备失败：${error.message}`));
   });
   roomCopyLinkButton?.addEventListener("click", () => {
     const online = onlineClient.getOnline();
@@ -210,6 +210,24 @@ function readProfileInput() {
 function replaceUrl(url) {
   if (`${location.pathname}${location.search}` === url) return;
   history.replaceState(null, "", url);
+}
+
+function ensureRoomMessage() {
+  const existing = document.querySelector("#room-message");
+  if (existing) return existing;
+  const roomCard = document.querySelector(".room-card");
+  const roomFooter = document.querySelector(".room-footer");
+  if (!roomCard && !roomFooter) return null;
+  const roomMessage = document.createElement("p");
+  roomMessage.id = "room-message";
+  roomMessage.className = "room-message";
+  roomMessage.setAttribute("aria-live", "polite");
+  (roomFooter ?? roomCard).append(roomMessage);
+  return roomMessage;
+}
+
+function clearRoomMessage() {
+  if (roomMessage) roomMessage.textContent = "";
 }
 
 function showRoomMessage(message) {

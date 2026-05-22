@@ -52,6 +52,15 @@ test("game view hides legacy create and join controls", () => {
   assert.match(css, /#game-view[\s\S]*display:\s*none\s*;/, "legacy game controls must be display none");
 });
 
+test("main flow creates a visible room message target when markup omits it", () => {
+  const script = fs.readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
+
+  assert.match(script, /ensureRoomMessage/, "main flow should ensure #room-message exists");
+  assert.match(script, /document\.createElement\("p"\)/, "room message should be created dynamically");
+  assert.match(script, /roomMessage\.id = "room-message"/, "created message should use the expected id");
+  assert.match(script, /aria-live", "polite"/, "created message should announce room feedback");
+});
+
 test("online snapshot preserves the local device selection", () => {
   const state = createGameState();
   const serverState = createGameState();
@@ -225,6 +234,40 @@ test("online client exposes hydrated online room state", () => {
   });
 
   assert.equal(client.getOnline().roomCode, "ROOM");
+});
+
+test("online client notifies online changes after hydrate room and game snapshots", async () => {
+  const socket = new FakeSocket();
+  const changes = [];
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+    onOnlineChange: (online) => changes.push(online ? { roomCode: online.roomCode, phase: online.phase } : online),
+  });
+
+  client.hydrateSnapshot({
+    state: createGameState(),
+    online: {
+      roomCode: "ROOM",
+      phase: "ready",
+      side: "plant",
+      peerCount: 2,
+      players: {},
+    },
+  });
+  await client.hostRoom("plant", { playerName: "Plant One", avatarId: "sunflower" });
+  socket.emitMessage({ type: "gameSnapshot", state: createGameState() });
+
+  assert.deepEqual(changes, [
+    { roomCode: "ROOM", phase: "ready" },
+    { roomCode: "ROOM", phase: "ready" },
+    { roomCode: "ROOM", phase: "ready" },
+  ]);
 });
 
 class MapStorage {
