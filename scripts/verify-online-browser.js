@@ -2,24 +2,34 @@ import { chromium } from "playwright";
 
 const baseUrl = process.argv[2] ?? "http://127.0.0.1:5173";
 const browser = await chromium.launch();
-const plantPage = await browser.newPage({ viewport: { width: 1280, height: 760 } });
-let zombiePage = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+const plantContext = await browser.newContext({ viewport: { width: 1280, height: 760 } });
+const zombieContext = await browser.newContext({ viewport: { width: 1280, height: 760 } });
+const mobileContext = await browser.newContext({ viewport: { width: 390, height: 760 } });
+const plantPage = await plantContext.newPage();
+let zombiePage = await zombieContext.newPage();
+const mobilePage = await mobileContext.newPage();
 const consoleErrors = [];
 
-for (const page of [plantPage, zombiePage]) {
+for (const page of [plantPage, zombiePage, mobilePage]) {
   attachErrorCapture(page);
 }
 
 await plantPage.goto(baseUrl, { waitUntil: "networkidle" });
+await loginAs(plantPage, "Plant Browser");
+await plantPage.locator("#room-name").fill("Browser Verify");
+await plantPage.locator("#room-create").click();
+const roomCode = await waitForRoomCode(plantPage);
 
-const hosted = await plantPage.evaluate(() => window.__onlineClient.hostRoom("plant"));
-const roomCode = hosted.room?.roomCode ?? hosted.online?.roomCode;
-await zombiePage.goto(joinUrl(baseUrl, roomCode, "plant"), { waitUntil: "networkidle" });
+await zombiePage.goto(joinUrl(baseUrl, roomCode), { waitUntil: "networkidle" });
+await loginAs(zombiePage, "Zombie Browser");
+await zombiePage.locator("#room-join").click();
 await zombiePage.waitForFunction(() => window.__gameState.online?.side === "zombie");
-const duplicateJoinPanelText = await zombiePage.locator("#online-panel").innerText();
+const zombieRoomText = await zombiePage.locator("#room-view").innerText();
 
-await plantPage.evaluate(() => window.__onlineClient.setReady(true));
-await zombiePage.evaluate(() => window.__onlineClient.setReady(true));
+await plantPage.locator("#room-ready").click();
+await zombiePage.locator("#room-ready").click();
+await waitForGameView(plantPage);
+await waitForGameView(zombiePage);
 await waitForOnlinePhase(plantPage, "playing");
 await waitForOnlinePhase(zombiePage, "playing");
 
@@ -36,9 +46,15 @@ await waitForEntitySync(plantPage);
 await waitForEntitySync(zombiePage);
 
 await zombiePage.reload({ waitUntil: "networkidle" });
-attachErrorCapture(zombiePage);
+await zombiePage.locator("#room-join").click();
 await zombiePage.waitForFunction(() => window.__gameState.online?.phase === "playing" && window.__gameState.online?.side === "zombie");
+await waitForGameView(zombiePage);
 await waitForEntitySync(zombiePage);
+
+await mobilePage.goto(baseUrl, { waitUntil: "networkidle" });
+await loginAs(mobilePage, "Mobile Browser");
+await mobilePage.locator("#room-view").waitFor({ state: "visible" });
+const mobileBodyText = await mobilePage.locator("body").innerText();
 
 const plantState = await readTextState(plantPage);
 const zombieState = await readTextState(zombiePage);
@@ -56,7 +72,8 @@ const result = {
   zombieOnline,
   plantDebug,
   zombieDebug,
-  duplicateJoinPanelText,
+  zombieRoomText,
+  mobileBodyHasUndefined: mobileBodyText.includes("undefined"),
   plantEntities: plantState.entities,
   zombieEntities: zombieState.entities,
 };
@@ -68,7 +85,8 @@ if (plantOnline.side !== "plant" || zombieOnline.side !== "zombie") process.exit
 if (plantOnline.phase !== "playing" || zombieOnline.phase !== "playing") process.exitCode = 1;
 if (plantOnline.players.plant.ready !== true || plantOnline.players.zombie.ready !== true) process.exitCode = 1;
 if (zombieDebug.online.side !== "zombie") process.exitCode = 1;
-if (duplicateJoinPanelText.includes("undefined") || !duplicateJoinPanelText.includes("僵尸方")) process.exitCode = 1;
+if (zombieRoomText.includes("undefined") || !zombieRoomText.includes("僵尸方")) process.exitCode = 1;
+if (mobileBodyText.includes("undefined")) process.exitCode = 1;
 if (plantState.entities.plants.length !== 1 || zombieState.entities.plants.length !== 1) process.exitCode = 1;
 if (plantState.entities.zombies.length !== 1 || zombieState.entities.zombies.length !== 1) process.exitCode = 1;
 
@@ -83,6 +101,20 @@ function waitForOnlinePhase(page, phase) {
   return page.waitForFunction((expected) => window.__gameState.online?.phase === expected, phase);
 }
 
+function waitForGameView(page) {
+  return page.locator("#game-view:not([hidden])").waitFor({ state: "visible" });
+}
+
+function waitForRoomCode(page) {
+  return page.waitForFunction(() => window.__gameState.online?.roomCode ?? window.__onlineClient.getOnline()?.roomCode).then((handle) => handle.jsonValue());
+}
+
+async function loginAs(page, nickname) {
+  await page.locator("#player-name").fill(nickname);
+  await page.locator("#login-continue").click();
+  await page.locator("#room-view").waitFor({ state: "visible" });
+}
+
 function waitForEntitySync(page) {
   return page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
@@ -94,9 +126,8 @@ function readTextState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
-function joinUrl(url, roomCode, side) {
+function joinUrl(url, roomCode) {
   const target = new URL(url);
   target.searchParams.set("room", roomCode);
-  target.searchParams.set("side", side);
   return target.toString();
 }
