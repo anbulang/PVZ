@@ -20,7 +20,7 @@ export const ROUND = {
   passiveSunInterval: 12,
   passiveSunAmount: 25,
   zombieRampTime: 60,
-  zombieBrainPerSecond: 7.2,
+  zombieBrainPerSecond: 5,
   maxZombieBrain: 650,
   finalPushStartsAt: 60,
   finalPushBrainMultiplier: 1.35,

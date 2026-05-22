@@ -30,6 +30,16 @@ test("passive sky sun waits longer than the old early snowball cadence", () => {
   assert.equal(state.sunPickups.some((sun) => sun.kind === "sky"), true);
 });
 
+test("zombie brain recovers at the slowed balance rate", () => {
+  const state = createGameState();
+  state.started = true;
+  const brainBefore = state.resources.zombie.brain;
+
+  step(state, 10);
+
+  assert.equal(Number((state.resources.zombie.brain - brainBefore).toFixed(2)), 50);
+});
+
 test("sunflowers produce visible sun pickups with amounts", () => {
   const state = createGameState();
   applyCommand(state, { type: "placePlant", plantType: "sunflower", row: 2, col: 2 });
