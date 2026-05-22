@@ -11,11 +11,224 @@ body {
 body {
   display: grid;
   place-items: center;
+  overflow: auto;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(247, 196, 73, 0.18), transparent 26%),
+    linear-gradient(140deg, #1f3b28 0%, #335833 46%, #583d29 100%);
+}
+
+.app-view {
+  width: min(100%, 1180px);
+  max-width: 100%;
+  min-width: 0;
+  min-height: min(720px, calc(100vh - 40px));
+  display: none;
+  box-sizing: border-box;
+}
+
+.app-shell[data-view="login"] #login-view,
+.app-shell[data-view="room"] #room-view,
+.app-shell[data-view="game"] #game-view {
+  display: grid;
+}
+
+.login-view,
+.room-view {
+  align-items: center;
+  padding: clamp(18px, 4vw, 42px);
+  border: 2px solid rgba(231, 213, 139, 0.52);
+  border-radius: 8px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
   overflow: hidden;
 }
 
+.login-view {
+  justify-items: start;
+  background:
+    linear-gradient(90deg, rgba(27, 54, 31, 0.94), rgba(27, 54, 31, 0.78) 46%, rgba(27, 54, 31, 0.18)),
+    url("../generated-assets/ui/login-hero.png") center right / cover no-repeat,
+    #31572f;
+}
+
+.room-view {
+  justify-items: center;
+  background:
+    linear-gradient(115deg, rgba(31, 55, 36, 0.94), rgba(52, 83, 42, 0.76) 52%, rgba(90, 61, 38, 0.66)),
+    url("../generated-assets/ui/room-panel-hero.png") center / cover no-repeat,
+    #35572f;
+}
+
+.login-panel,
+.room-card {
+  width: min(100%, 430px);
+  display: grid;
+  gap: 16px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(239, 220, 154, 0.48);
+  border-radius: 8px;
+  background: rgba(24, 43, 26, 0.88);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26);
+  box-sizing: border-box;
+}
+
+.room-card {
+  width: min(100%, 680px);
+  background: rgba(26, 44, 30, 0.9);
+}
+
+.room-card-header {
+  display: grid;
+  gap: 6px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #f7c449;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.login-panel h1,
+.room-card h1 {
+  margin: 0;
+  color: #fff5c6;
+  font-size: clamp(28px, 5vw, 46px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.room-card h1 {
+  font-size: clamp(26px, 4vw, 38px);
+}
+
+.field-stack {
+  display: grid;
+  gap: 7px;
+  color: #eadcaa;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.field-stack input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(239, 220, 154, 0.62);
+  border-radius: 7px;
+  padding: 0 12px;
+  background: #fbf1c7;
+  color: #26331e;
+  font: 800 15px/1 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-sizing: border-box;
+}
+
+.avatar-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.avatar-option {
+  min-height: 78px;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  padding: 10px 8px;
+  border: 1px solid rgba(239, 220, 154, 0.46);
+  border-radius: 8px;
+  background: rgba(77, 111, 45, 0.72);
+  color: #fff5c6;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.avatar-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: #f7c449;
+}
+
+.login-panel button,
+.room-card button {
+  min-height: 42px;
+  border: 1px solid rgba(255, 238, 166, 0.7);
+  border-radius: 7px;
+  padding: 0 16px;
+  background: #f7c449;
+  color: #25351f;
+  font: 900 15px/1 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  box-shadow: inset 0 -2px 0 rgba(86, 54, 26, 0.2);
+}
+
+.room-actions,
+.room-footer {
+  display: grid;
+  grid-template-columns: minmax(126px, auto) minmax(150px, 1fr) minmax(110px, auto);
+  gap: 10px;
+  align-items: end;
+}
+
+.room-footer {
+  grid-template-columns: 1fr 1fr;
+}
+
+.compact-field {
+  min-width: 0;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seat-card {
+  min-height: 104px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(239, 220, 154, 0.4);
+  border-radius: 8px;
+  background: rgba(52, 78, 39, 0.76);
+  box-sizing: border-box;
+}
+
+.seat-card strong {
+  color: #fff5c6;
+  font-size: 17px;
+}
+
+.seat-card span {
+  color: #dacb96;
+  font-size: 13px;
+}
+
+.game-view {
+  width: min(100%, 1280px);
+  min-height: 0;
+}
+
 .game-shell {
-  width: min(100vw, 1280px);
+  width: 100%;
+  max-width: 1280px;
   height: min(100vh, 764px);
   display: flex;
   flex-direction: column;
@@ -112,8 +325,43 @@ canvas {
 }
 
 @media (max-width: 720px) {
-  body {
-    overflow: auto;
+  .app-shell {
+    align-items: start;
+    padding: 12px;
+  }
+
+  .app-view {
+    min-height: calc(100vh - 24px);
+  }
+
+  .login-view,
+  .room-view {
+    padding: 14px;
+    background-position: center;
+  }
+
+  .login-panel,
+  .room-card {
+    padding: 16px;
+  }
+
+  .avatar-picker,
+  .seat-grid,
+  .room-actions,
+  .room-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .login-panel h1,
+  .room-card h1 {
+    font-size: 30px;
+  }
+
+  .avatar-option {
+    min-height: 54px;
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    text-align: left;
   }
 
   .game-shell {
@@ -134,6 +382,39 @@ canvas {
   canvas {
     height: auto;
     aspect-ratio: 16 / 9;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .app-view {
+    min-height: calc(100vh - 16px);
+  }
+
+  .login-view,
+  .room-view {
+    padding: 10px;
+  }
+
+  .login-panel,
+  .room-card {
+    gap: 13px;
+    padding: 14px;
+  }
+
+  .login-panel h1,
+  .room-card h1 {
+    font-size: 27px;
+  }
+
+  .login-panel button,
+  .room-card button,
+  .field-stack input {
+    min-height: 40px;
+    font-size: 14px;
   }
 }
 

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createGameState } from "../src/game/state.js";
 import {
   applyLocalSelectionCommand,
@@ -13,6 +14,30 @@ import {
   saveOnlineIdentity,
   webSocketUrlForLocation,
 } from "../src/online/client.js";
+
+test("index html exposes the online app shell views", () => {
+  const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const requiredIds = [
+    "login-view",
+    "player-name",
+    "avatar-sunflower",
+    "login-continue",
+    "room-view",
+    "room-name",
+    "room-code-entry",
+    "room-create",
+    "room-join",
+    "room-copy-link",
+    "room-ready",
+    "game-view",
+    "online-panel",
+    "game",
+  ];
+
+  for (const id of requiredIds) {
+    assert.match(html, new RegExp(`id=["']${id}["']`), `missing #${id}`);
+  }
+});
 
 test("online snapshot preserves the local device selection", () => {
   const state = createGameState();
