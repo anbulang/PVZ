@@ -39,6 +39,16 @@ test("index html exposes the online app shell views", () => {
   }
 });
 
+test("game view hides legacy create and join controls", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const legacyControls = ["online-host", "online-room-code", "online-side", "online-join"];
+
+  for (const id of legacyControls) {
+    assert.match(css, new RegExp(`#game-view\\s+#${id}`), `missing #game-view #${id} hiding selector`);
+  }
+  assert.match(css, /#game-view[\s\S]*display:\s*none\s*;/, "legacy game controls must be display none");
+});
+
 test("online snapshot preserves the local device selection", () => {
   const state = createGameState();
   const serverState = createGameState();

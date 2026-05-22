@@ -317,6 +317,13 @@ body {
   background: rgba(39, 53, 35, 0.96);
 }
 
+#game-view #online-host,
+#game-view #online-room-code,
+#game-view #online-side,
+#game-view #online-join {
+  display: none;
+}
+
 canvas {
   display: block;
   width: 100%;
