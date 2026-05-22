@@ -30,12 +30,13 @@ export function createOnlineRoom(options = {}) {
   };
 }
 
-export function joinOnlineRoom(room, { clientId = randomClientId(), requestedSide = null, now = Date.now() } = {}) {
+export function joinOnlineRoom(room, { clientId = randomClientId(), requestedSide = null, profile = null, now = Date.now() } = {}) {
   const existing = room.clients.get(clientId);
   if (existing) {
     existing.online = true;
     existing.lastSeenAt = now;
     existing.disconnectedAt = null;
+    if (profile !== null) existing.profile = sanitizeProfile(profile);
     room.updatedAt = now;
     updateRoomPhase(room, now);
     return { ok: true, clientId, side: existing.side };
@@ -53,6 +54,7 @@ export function joinOnlineRoom(room, { clientId = randomClientId(), requestedSid
     online: true,
     ready: false,
     playAgainReady: false,
+    profile: sanitizeProfile(profile),
     joinedAt: now,
     lastSeenAt: now,
     disconnectedAt: null,
@@ -217,14 +219,23 @@ function sideAssignments(room) {
 function serializePlayer(room, side) {
   const player = Array.from(room.clients.values()).find((client) => client.side === side);
   if (!player) {
-    return { clientId: null, online: false, ready: false, playAgainReady: false, disconnectedAt: null };
+    return { clientId: null, online: false, ready: false, playAgainReady: false, profile: null, disconnectedAt: null };
   }
   return {
     clientId: player.clientId,
     online: Boolean(player.online),
     ready: Boolean(player.ready),
     playAgainReady: Boolean(player.playAgainReady),
+    profile: player.profile ?? { playerName: "玩家", avatarId: "sunflower" },
     disconnectedAt: player.disconnectedAt ?? null,
+  };
+}
+
+function sanitizeProfile(profile) {
+  if (!profile) return { playerName: "玩家", avatarId: "sunflower" };
+  return {
+    playerName: String(profile.playerName ?? "玩家").trim().slice(0, 18) || "玩家",
+    avatarId: String(profile.avatarId ?? "sunflower").slice(0, 24),
   };
 }
 

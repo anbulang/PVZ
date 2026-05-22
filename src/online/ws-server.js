@@ -70,7 +70,7 @@ function handleMessage({ socket, data, rooms, sockets }) {
 
   if (message.type === "createRoom") {
     const room = createUniqueRoom(rooms);
-    const joined = joinOnlineRoom(room, { clientId: meta.clientId, requestedSide: message.side });
+    const joined = joinOnlineRoom(room, { clientId: meta.clientId, requestedSide: message.side, profile: message.profile });
     if (!joined.ok) return send(socket, { type: "error", code: "join_failed", message: joined.reason });
     rooms.set(room.code, room);
     meta.roomCode = room.code;
@@ -81,7 +81,7 @@ function handleMessage({ socket, data, rooms, sockets }) {
   if (message.type === "joinRoom") {
     const room = rooms.get(String(message.roomCode ?? "").toUpperCase());
     if (!room) return send(socket, { type: "error", code: "room_not_found", message: "room not found" });
-    const joined = joinOnlineRoom(room, { clientId: message.clientId ?? meta.clientId, requestedSide: message.side });
+    const joined = joinOnlineRoom(room, { clientId: message.clientId ?? meta.clientId, requestedSide: message.side, profile: message.profile });
     if (!joined.ok) return send(socket, { type: "error", code: "join_failed", message: joined.reason });
     meta.clientId = joined.clientId;
     meta.roomCode = room.code;

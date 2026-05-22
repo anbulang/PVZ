@@ -46,6 +46,15 @@ test("online room assigns the remaining side when requested side is already take
   assert.equal(room.clients.get("second-device").side, "zombie");
 });
 
+test("online room serializes lightweight player profiles", () => {
+  const room = createOnlineRoom({ code: "PROF" });
+  joinOnlineRoom(room, { clientId: "plant-device", requestedSide: "plant", profile: { playerName: "Plant One", avatarId: "sunflower" } });
+  joinOnlineRoom(room, { clientId: "zombie-device", requestedSide: "zombie", profile: { playerName: "Zombie Two", avatarId: "cone" } });
+  const snapshot = serializeOnlineRoom(room, "plant-device");
+  assert.deepEqual(snapshot.room.players.plant.profile, { playerName: "Plant One", avatarId: "sunflower" });
+  assert.deepEqual(snapshot.room.players.zombie.profile, { playerName: "Zombie Two", avatarId: "cone" });
+});
+
 test("online room applies commands from both devices to one authoritative state", () => {
   const room = createPlayingRoom({ code: "ROOM2" });
   const plant = room.clients.get("plant-device");

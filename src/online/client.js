@@ -79,20 +79,20 @@ export function createOnlineClient({
     send({ type: "command", sequence: nextClientSequence(), command }).catch((error) => showError(error));
   }
 
-  async function hostRoom(side = "plant") {
+  async function hostRoom(side = "plant", profile) {
     await ensureConnected();
     const snapshotPromise = waitForRoomSnapshot((room) => room.side === side);
-    await send({ type: "createRoom", side });
+    await send({ type: "createRoom", side, profile });
     const room = await snapshotPromise;
     syncUrl();
     return { room, online: room };
   }
 
-  async function joinRoom(roomCode, side = "zombie") {
+  async function joinRoom(roomCode, side = "zombie", profile) {
     await ensureConnected();
     const normalizedRoom = roomCode.toUpperCase();
     const snapshotPromise = waitForRoomSnapshot((room) => roomMatchesJoinRequest(room, normalizedRoom));
-    await send({ type: "joinRoom", roomCode: normalizedRoom, side, clientId: online?.clientId });
+    await send({ type: "joinRoom", roomCode: normalizedRoom, side, profile, clientId: online?.clientId });
     const room = await snapshotPromise;
     syncUrl();
     return { room, online: room };

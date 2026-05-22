@@ -103,6 +103,25 @@ test("websocket join assigns remaining side when duplicate plant side is request
   assert.equal(joined.room.players.zombie.clientId, "second-device");
 });
 
+test("websocket room snapshots include player profiles", async (t) => {
+  const server = createOnlineHttpServer({ rootDir: process.cwd(), tickMs: 0 });
+  await listen(server);
+  t.after(() => closeOnlineServer(server));
+  const baseUrl = `ws://127.0.0.1:${server.address().port}/ws`;
+  const plant = await connectClient(baseUrl);
+  const zombie = await connectClient(baseUrl);
+  t.after(() => plant.close());
+  t.after(() => zombie.close());
+  await exchange(plant, { type: "hello", clientId: "plant-device" }, "welcome");
+  plant.send(JSON.stringify({ type: "createRoom", side: "plant", profile: { playerName: "Plant One", avatarId: "sunflower" } }));
+  const created = await waitForMessage(plant, "roomSnapshot");
+  await exchange(zombie, { type: "hello", clientId: "zombie-device" }, "welcome");
+  zombie.send(JSON.stringify({ type: "joinRoom", roomCode: created.room.roomCode, side: "zombie", profile: { playerName: "Zombie Two", avatarId: "cone" } }));
+  const joined = await waitForMessage(zombie, "roomSnapshot");
+  assert.deepEqual(joined.room.players.plant.profile, { playerName: "Plant One", avatarId: "sunflower" });
+  assert.deepEqual(joined.room.players.zombie.profile, { playerName: "Zombie Two", avatarId: "cone" });
+});
+
 function connectClient(url) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(url);
