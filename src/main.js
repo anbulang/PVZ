@@ -44,8 +44,8 @@ renderAppFlow();
 attachInput(canvas, state, (command) => onlineClient.dispatchCommand(command), {
   getSelection: () => onlineClient.getSelection(),
 });
-canvas.addEventListener("pointerdown", unlockAudio);
-window.addEventListener("keydown", unlockAudio);
+canvas.addEventListener("pointerdown", () => unlockAudio(state));
+window.addEventListener("keydown", () => unlockAudio(state));
 
 function frame(now) {
   const elapsed = Math.min(0.05, (now - lastTime) / 1000);
@@ -56,7 +56,7 @@ function frame(now) {
     accumulator += elapsed;
     while (accumulator >= fixedDt) {
       updateGame(state, fixedDt);
-      processAudioEvents(state.audioEvents);
+      processAudioEvents(state.audioEvents, state);
       accumulator -= fixedDt;
     }
   }
@@ -71,7 +71,7 @@ window.advanceTime = (ms) => {
   if (onlineClient.isOnline()) return;
   const steps = Math.max(1, Math.round(ms / (1000 / 60)));
   for (let i = 0; i < steps; i += 1) updateGame(state, fixedDt);
-  processAudioEvents(state.audioEvents);
+  processAudioEvents(state.audioEvents, state);
   renderGame(ctx, state);
 };
 window.render_game_to_text = () => serializeGameState(state);

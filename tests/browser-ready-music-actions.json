@@ -1,0 +1,13 @@
+{
+  "screenshotName": "ready-music.png",
+  "steps": [
+    { "key": "Shift", "frames": 8 }
+  ],
+  "expect": {
+    "allowNoLiveEntities": true,
+    "audioUnlocked": true,
+    "musicActive": true,
+    "musicScene": "ready",
+    "musicPathIncludes": "MainMenuPvZ1.ogg"
+  }
+}

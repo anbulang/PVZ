@@ -1,6 +1,10 @@
 .superpowers/
 .worktrees/
-/assets
+/assets/*
+!/assets/音效/
+/assets/音效/*
+!/assets/音效/GrasswalkPvZ1.ogg
+!/assets/音效/MainMenuPvZ1.ogg
 node_modules/
 dist/
 coverage/
