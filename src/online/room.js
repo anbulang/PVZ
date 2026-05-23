@@ -33,6 +33,9 @@ export function createOnlineRoom(options = {}) {
 export function joinOnlineRoom(room, { clientId = randomClientId(), requestedSide = null, profile = null, now = Date.now() } = {}) {
   const existing = room.clients.get(clientId);
   if (existing) {
+    if (existing.online && requestedSide && SIDES.includes(requestedSide) && requestedSide !== existing.side) {
+      return joinOnlineRoom(room, { clientId: uniqueClientId(room), requestedSide, profile, now });
+    }
     existing.online = true;
     existing.lastSeenAt = now;
     existing.disconnectedAt = null;
@@ -303,6 +306,14 @@ function randomRoomCode() {
 
 function randomClientId() {
   return `client-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function uniqueClientId(room) {
+  for (let attempts = 0; attempts < 12; attempts += 1) {
+    const clientId = randomClientId();
+    if (!room.clients.has(clientId)) return clientId;
+  }
+  throw new Error("failed to allocate client id");
 }
 
 function sideLabel(side) {

@@ -4,7 +4,8 @@ import { attachInput } from "./game/input.js?v=20260521-online1";
 import { renderGame } from "./game/render.js?v=20260519-tempo1";
 import { createGameState, serializeGameState } from "./game/state.js?v=20260519-tempo1";
 import { updateGame } from "./game/systems.js?v=20260519-tempo1";
-import { createOnlineClient } from "./online/client.js?v=20260522-bugfix1";
+import { copyText } from "./online/clipboard.js?v=20260523-controls1";
+import { createOnlineClient, roomControlState } from "./online/client.js?v=20260523-controls1";
 import { gameUrl, inviteUrl, nextViewState, roomUrl, viewUrl } from "./online/app-flow.js?v=20260523-invite1";
 import { loadPlayerProfile, savePlayerProfile } from "./online/profile.js?v=20260522-flow1";
 
@@ -131,12 +132,9 @@ async function fetchNetworkInfo() {
 }
 
 function copyInviteUrl(url) {
-  const writePromise = navigator.clipboard?.writeText?.(url);
-  if (!writePromise) {
-    showRoomMessage(url);
-    return;
-  }
-  writePromise.then(() => showRoomMessage("邀请链接已复制。")).catch(() => showRoomMessage(url));
+  copyText(url).then((result) => {
+    showRoomMessage(result.ok ? "邀请链接已复制。" : "复制失败，请检查浏览器权限。");
+  }).catch(() => showRoomMessage("复制失败，请检查浏览器权限。"));
 }
 
 function handleLogin(event) {
@@ -164,12 +162,16 @@ function renderRoomControls(online, pendingRoomCode) {
   if (roomCodeEntry && document.activeElement !== roomCodeEntry) {
     roomCodeEntry.value = online?.roomCode ?? pendingRoomCode ?? roomCodeEntry.value;
   }
+  const controls = roomControlState(online);
   const currentReady = online?.players?.[online.side]?.ready ?? false;
+  if (roomCreateButton) roomCreateButton.disabled = !controls.canCreate;
+  if (roomJoinButton) roomJoinButton.disabled = !controls.canJoin;
+  if (roomCodeEntry) roomCodeEntry.disabled = !controls.canJoin;
   if (roomReadyButton) {
-    roomReadyButton.disabled = !online?.roomCode || online.phase !== "ready";
+    roomReadyButton.disabled = !controls.canReady;
     roomReadyButton.textContent = currentReady ? "取消准备" : "准备开始";
   }
-  if (roomCopyLinkButton) roomCopyLinkButton.disabled = !online?.roomCode;
+  if (roomCopyLinkButton) roomCopyLinkButton.disabled = !controls.canCopyInvite;
 }
 
 function renderSeats(online) {

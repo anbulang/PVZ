@@ -126,7 +126,7 @@ function handleMessage({ socket, data, rooms, sockets }) {
 function broadcastRoomSnapshot({ room, sockets }) {
   for (const [socket, meta] of sockets) {
     if (meta.roomCode !== room.code) continue;
-    send(socket, { type: "roomSnapshot", room: serializeRoomSnapshot(room, meta.clientId) });
+    send(socket, { type: "roomSnapshot", clientId: meta.clientId, room: serializeRoomSnapshot(room, meta.clientId) });
   }
 }
 

@@ -46,6 +46,19 @@ test("online room assigns the remaining side when requested side is already take
   assert.equal(room.clients.get("second-device").side, "zombie");
 });
 
+test("online room treats a live duplicate identity requesting another side as a new device", () => {
+  const room = createOnlineRoom({ code: "SAME" });
+
+  const plant = joinOnlineRoom(room, { clientId: "same-client", requestedSide: "plant" });
+  const zombie = joinOnlineRoom(room, { clientId: "same-client", requestedSide: "zombie" });
+
+  assert.equal(plant.ok, true);
+  assert.equal(zombie.ok, true);
+  assert.equal(zombie.side, "zombie");
+  assert.notEqual(zombie.clientId, plant.clientId);
+  assert.equal(room.clients.size, 2);
+});
+
 test("online room serializes lightweight player profiles", () => {
   const room = createOnlineRoom({ code: "PROF" });
   joinOnlineRoom(room, { clientId: "plant-device", requestedSide: "plant", profile: { playerName: "Plant One", avatarId: "sunflower" } });

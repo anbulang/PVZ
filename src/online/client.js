@@ -150,7 +150,7 @@ export function createOnlineClient({
       return;
     }
     if (message.type === "roomSnapshot") {
-      const room = { ...message.room, clientId: online?.clientId ?? null };
+      const room = { ...message.room, clientId: message.clientId ?? online?.clientId ?? null };
       online = room;
       applyRoomSnapshot(state, room, localSelection);
       if (storage && room.clientId && room.roomCode) saveOnlineIdentity(storage, { clientId: room.clientId, roomCode: room.roomCode, side: room.side });
@@ -395,6 +395,16 @@ export function onlinePanelViewModel(online) {
     readyText: currentPlayer.ready ? "取消准备" : "准备",
     showPlayAgain: phase === "finished",
     playAgainText: currentPlayer.playAgainReady ? "取消再来" : "再来一局",
+  };
+}
+
+export function roomControlState(online) {
+  const hasRoom = Boolean(online?.roomCode);
+  return {
+    canCreate: !hasRoom,
+    canJoin: !hasRoom,
+    canCopyInvite: hasRoom,
+    canReady: hasRoom && online?.phase === "ready",
   };
 }
 

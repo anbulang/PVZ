@@ -10,10 +10,12 @@ import {
   createOnlineClient,
   loadOnlineIdentity,
   onlinePanelViewModel,
+  roomControlState,
   roomMatchesJoinRequest,
   saveOnlineIdentity,
   webSocketUrlForLocation,
 } from "../src/online/client.js";
+import { copyText } from "../src/online/clipboard.js";
 
 test("index html exposes the online app shell views", () => {
   const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -57,6 +59,13 @@ test("room message spans footer columns and wraps invite URLs", () => {
 
   assert.match(css, /\.room-message\s*{[\s\S]*grid-column:\s*1\s*\/\s*-1\s*;/, "room message should span footer columns");
   assert.match(css, /\.room-message\s*{[\s\S]*overflow-wrap:\s*anywhere\s*;/, "room message should wrap long invite URLs");
+});
+
+test("room buttons have visible disabled styling", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.room-card button:disabled\s*{[\s\S]*opacity:\s*0\.[0-9]+;/, "disabled room buttons should be visibly dimmed");
+  assert.match(css, /\.room-card button:disabled\s*{[\s\S]*cursor:\s*not-allowed;/, "disabled room buttons should show a disabled cursor");
 });
 
 test("main flow creates a visible room message target when markup omits it", () => {
@@ -181,6 +190,27 @@ test("online panel view model does not render undefined before joining a room", 
   assert.equal(pending.detail, "请选择创建房间或加入房间。");
 });
 
+test("room control state disables invalid room actions", () => {
+  assert.deepEqual(roomControlState(null), {
+    canCreate: true,
+    canJoin: true,
+    canCopyInvite: false,
+    canReady: false,
+  });
+  assert.deepEqual(roomControlState({ roomCode: "ROOM", phase: "lobby" }), {
+    canCreate: false,
+    canJoin: false,
+    canCopyInvite: true,
+    canReady: false,
+  });
+  assert.deepEqual(roomControlState({ roomCode: "ROOM", phase: "ready" }), {
+    canCreate: false,
+    canJoin: false,
+    canCopyInvite: true,
+    canReady: true,
+  });
+});
+
 test("client join matcher accepts server-assigned remaining side", () => {
   assert.equal(roomMatchesJoinRequest({ roomCode: "ROOM", side: "zombie" }, "room"), true);
   assert.equal(roomMatchesJoinRequest({ roomCode: "OTHER", side: "zombie" }, "room"), false);
@@ -280,6 +310,26 @@ test("online client reports missing rooms instead of timing out", async () => {
   );
 });
 
+test("online client adopts reassigned room client ids after identity collision", async () => {
+  const storage = new MapStorage();
+  const socket = new ReassignedJoinSocket();
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  const joined = await client.joinRoom("room", "zombie", { playerName: "Zombie Two", avatarId: "cone" });
+
+  assert.equal(joined.online.clientId, "client-zombie");
+  assert.equal(client.getOnline().clientId, "client-zombie");
+  assert.equal(loadOnlineIdentity(storage).clientId, "client-zombie");
+});
+
 test("online client notifies online changes after hydrate room and game snapshots", async () => {
   const socket = new FakeSocket();
   const changes = [];
@@ -312,6 +362,48 @@ test("online client notifies online changes after hydrate room and game snapshot
     { roomCode: "ROOM", phase: "ready" },
     { roomCode: "ROOM", phase: "ready" },
   ]);
+});
+
+test("copy text uses clipboard API when available", async () => {
+  const writes = [];
+
+  const result = await copyText("http://192.168.2.15:5191/?view=room&room=ABCD", {
+    navigator: { clipboard: { writeText: async (text) => writes.push(text) } },
+    document: null,
+  });
+
+  assert.deepEqual(writes, ["http://192.168.2.15:5191/?view=room&room=ABCD"]);
+  assert.deepEqual(result, { ok: true, method: "clipboard" });
+});
+
+test("copy text falls back to an automatic textarea copy", async () => {
+  const copied = [];
+  const bodyNodes = [];
+  const documentLike = {
+    body: {
+      appendChild: (node) => bodyNodes.push(node),
+      removeChild: (node) => bodyNodes.splice(bodyNodes.indexOf(node), 1),
+    },
+    createElement: () => ({
+      value: "",
+      style: {},
+      setAttribute() {},
+      focus() {},
+      select() {
+        copied.push(this.value);
+      },
+    }),
+    execCommand: (command) => command === "copy",
+  };
+
+  const result = await copyText("http://192.168.2.15:5191/?view=room&room=ABCD", {
+    navigator: {},
+    document: documentLike,
+  });
+
+  assert.deepEqual(copied, ["http://192.168.2.15:5191/?view=room&room=ABCD"]);
+  assert.equal(bodyNodes.length, 0);
+  assert.deepEqual(result, { ok: true, method: "fallback" });
 });
 
 class MapStorage {
@@ -376,6 +468,23 @@ class RejectingJoinSocket extends FakeSocket {
     }
     if (message.type === "joinRoom") {
       queueMicrotask(() => this.emitMessage({ type: "error", code: "room_not_found", message: "room not found" }));
+    }
+  }
+}
+
+class ReassignedJoinSocket extends FakeSocket {
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "same-client" }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({
+        type: "roomSnapshot",
+        clientId: "client-zombie",
+        room: fakeRoomSnapshot({ roomCode: message.roomCode, side: "zombie" }),
+      }));
     }
   }
 }
