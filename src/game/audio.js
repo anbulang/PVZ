@@ -6,10 +6,12 @@ const lastPlayedAt = new Map();
 
 let unlocked = false;
 let music = null;
+let musicScene = null;
 let musicActive = false;
 let debug = {
   audioUnlocked: false,
   musicActive: false,
+  musicScene: null,
   musicPath: null,
   lastSound: null,
   missing: [],
@@ -46,34 +48,19 @@ const COOLDOWNS = {
   jalapeno: 180,
 };
 
-export function unlockAudio() {
+export function unlockAudio(state = null) {
   unlocked = true;
   debug.audioUnlocked = true;
-  if (!music) {
-    music = createAudio(ASSET_PATHS.music.background, { loop: true, volume: 0.16 });
-    debug.musicPath = music?.dataset?.assetPath ?? null;
-  }
-  if (music && music.paused) {
-    music.play()
-      .then(() => {
-        musicActive = true;
-        debug.musicActive = true;
-      })
-      .catch(() => {
-        musicActive = false;
-        debug.musicActive = false;
-      });
-    musicActive = !music.paused;
-    debug.musicActive = musicActive;
-  }
+  syncMusic(state);
 }
 
-export function processAudioEvents(events) {
+export function processAudioEvents(events, state = null) {
   if (!unlocked) {
     events.length = 0;
     return;
   }
 
+  syncMusic(state);
   for (const event of events) {
     const key = SOUND_FOR_EVENT[event.type];
     if (!key) continue;
@@ -89,9 +76,43 @@ export function getAudioDebugState() {
 
 export function getAudioAssetPaths() {
   return {
-    music: ASSET_PATHS.music.background,
+    music: uniquePaths(Object.values(ASSET_PATHS.music).flatMap((paths) => normalizeAssetList(paths))),
     sfx: Object.values(ASSET_PATHS.sfx).flatMap((paths) => normalizeAssetList(paths)),
   };
+}
+
+export function musicSceneForState(state) {
+  return state?.started ? "dayLawn" : "ready";
+}
+
+function syncMusic(state) {
+  const nextScene = musicSceneForState(state);
+  if (!music || musicScene !== nextScene) {
+    if (music) {
+      music.pause();
+      try {
+        music.currentTime = 0;
+      } catch {}
+    }
+    musicScene = nextScene;
+    music = createAudio(ASSET_PATHS.music[nextScene], { loop: true, volume: nextScene === "ready" ? 0.18 : 0.16 });
+    debug.musicScene = nextScene;
+    debug.musicPath = music?.dataset?.assetPath ?? null;
+  }
+
+  if (music && music.paused) {
+    music.play()
+      .then(() => {
+        musicActive = true;
+        debug.musicActive = true;
+      })
+      .catch(() => {
+        musicActive = false;
+        debug.musicActive = false;
+      });
+    musicActive = !music.paused;
+    debug.musicActive = musicActive;
+  }
 }
 
 function playSound(key) {
@@ -131,4 +152,8 @@ function createAudio(paths, options) {
     return audio;
   }
   return null;
+}
+
+function uniquePaths(paths) {
+  return [...new Set(paths)];
 }

@@ -13,6 +13,8 @@
   "expect": {
     "audioUnlocked": true,
     "musicActive": true,
+    "musicScene": "dayLawn",
+    "musicPathIncludes": "GrasswalkPvZ1.ogg",
     "directorAutoWaves": false,
     "maxWaveCount": 0,
     "minManualDeployCount": 1,

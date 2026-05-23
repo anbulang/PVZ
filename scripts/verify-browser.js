@@ -47,6 +47,9 @@ for (const step of actions.steps) {
   if (step.buttons?.includes("left_mouse_button")) {
     await clickCanvasLogical(page, step.mouse_x, step.mouse_y);
   }
+  if (step.key) {
+    await page.keyboard.press(step.key);
+  }
   if (step.command) {
     await page.evaluate((command) => {
       if (command.type === "collectFirstSun") {
@@ -144,6 +147,12 @@ if (actions.expect?.audioUnlocked !== undefined && state.audio?.audioUnlocked !=
   process.exitCode = 1;
 }
 if (actions.expect?.musicActive !== undefined && state.audio?.musicActive !== actions.expect.musicActive) {
+  process.exitCode = 1;
+}
+if (actions.expect?.musicScene !== undefined && state.audio?.musicScene !== actions.expect.musicScene) {
+  process.exitCode = 1;
+}
+if (actions.expect?.musicPathIncludes && !state.audio?.musicPath?.includes(actions.expect.musicPathIncludes)) {
   process.exitCode = 1;
 }
 if ((state.audio?.missing?.length ?? 0) > 0) {
