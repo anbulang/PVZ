@@ -28,6 +28,7 @@ export function attachOnlineWebSocketServer(server, { rooms = new Map(), tickMs 
       if (!meta?.clientId || !meta.roomCode) return;
       const room = rooms.get(meta.roomCode);
       if (!room) return;
+      if (hasLiveSocketForClient({ sockets, roomCode: meta.roomCode, clientId: meta.clientId })) return;
       markOnlineClientDisconnected(room, meta.clientId);
       broadcastRoomSnapshot({ room, sockets });
     });
@@ -81,7 +82,7 @@ function handleMessage({ socket, data, rooms, sockets }) {
   if (message.type === "joinRoom") {
     const room = rooms.get(String(message.roomCode ?? "").toUpperCase());
     if (!room) return send(socket, { type: "error", code: "room_not_found", message: "room not found" });
-    const joined = joinOnlineRoom(room, { clientId: message.clientId ?? meta.clientId, requestedSide: message.side, profile: message.profile });
+    const joined = joinOnlineRoom(room, { clientId: meta.clientId, requestedSide: message.side, profile: message.profile });
     if (!joined.ok) return send(socket, { type: "error", code: "join_failed", message: joined.reason });
     meta.clientId = joined.clientId;
     meta.roomCode = room.code;
@@ -161,4 +162,13 @@ function createUniqueRoom(rooms) {
 
 function randomClientId() {
   return `client-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+
+function hasLiveSocketForClient({ sockets, roomCode, clientId }) {
+  for (const [connectedSocket, meta] of sockets) {
+    if (meta.roomCode !== roomCode || meta.clientId !== clientId) continue;
+    if (connectedSocket.readyState === connectedSocket.OPEN) return true;
+  }
+  return false;
 }

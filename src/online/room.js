@@ -113,6 +113,14 @@ export function markOnlineClientDisconnected(room, clientId, options = {}) {
   const client = room.clients.get(clientId);
   if (!client) return { ok: false, reason: "unknown client" };
   const now = options.now ?? Date.now();
+
+  if ([ROOM_PHASES.lobby, ROOM_PHASES.ready].includes(room.phase)) {
+    room.clients.delete(clientId);
+    room.updatedAt = now;
+    updateRoomPhase(room, now);
+    return { ok: true, removed: true };
+  }
+
   client.online = false;
   client.disconnectedAt = now;
   client.lastSeenAt = now;
