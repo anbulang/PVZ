@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { ASSET_MANIFEST, ASSET_PATHS, GENERATED_ASSET_PATHS, SPRITESHEET_MANIFEST, armorDropAssetFor, zombieVisualFor } from "../src/game/assets.js";
-import { getAudioAssetPaths } from "../src/game/audio.js";
+import * as audio from "../src/game/audio.js";
+import { createGameState } from "../src/game/state.js";
 
 function assertExists(assetPath) {
   assert.equal(fs.existsSync(path.resolve(assetPath)), true, `${assetPath} should exist`);
@@ -67,7 +68,7 @@ test("critical animation and audio assets map to files", () => {
     GENERATED_ASSET_PATHS.fx.armorBucket,
     GENERATED_ASSET_PATHS.fx.armorScreen,
     GENERATED_ASSET_PATHS.fx.armorRunner,
-    ...getAudioAssetPaths().music,
+    ...audio.getAudioAssetPaths().music,
     ...Object.values(ASSET_PATHS.sfx).map((paths) => paths[0]),
   ].forEach(assertExists);
 });
@@ -169,9 +170,19 @@ test("armored zombie armor drops use distinct generated pieces", () => {
   }
 });
 
-test("background music uses the selected ogg track", () => {
-  assert.deepEqual(ASSET_PATHS.music.background, ["assets/音效/ZombiesOnYourLawn.ogg"]);
-  assert.equal(getAudioAssetPaths().music.includes("assets/音效/ZombiesOnYourLawn.ogg"), true);
+test("music scenes use Crazy Dave for ready screens and Grasswalk for day lawn play", () => {
+  const state = createGameState();
+  assert.equal(typeof audio.musicSceneForState, "function");
+  assert.equal(audio.musicSceneForState(state), "ready");
+  assert.deepEqual(ASSET_PATHS.music.ready, ["assets/音效/MainMenuPvZ1.ogg"]);
+
+  state.started = true;
+  assert.equal(audio.musicSceneForState(state), "dayLawn");
+  assert.deepEqual(ASSET_PATHS.music.dayLawn, ["assets/音效/GrasswalkPvZ1.ogg"]);
+
+  const musicPaths = audio.getAudioAssetPaths().music;
+  assert.equal(musicPaths.includes("assets/音效/MainMenuPvZ1.ogg"), true);
+  assert.equal(musicPaths.includes("assets/音效/GrasswalkPvZ1.ogg"), true);
 });
 
 test("zombie visual state selects generated spritesheets and keeps legacy fallbacks", () => {

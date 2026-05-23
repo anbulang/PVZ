@@ -414,3 +414,14 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Verified `curl -I http://localhost:5174/`: HTTP 200.
 - Verified `curl -I http://192.168.2.15:5174/`: HTTP 200.
 - Refreshed in-app browser: page title `花园攻防本地双人版`, console errors empty.
+
+## 2026-05-23 PVZ Music Refresh
+
+- Downloaded `GrasswalkPvZ1.ogg` and `MainMenuPvZ1.ogg` from the Plants vs. Zombies Fandom file endpoints into `assets/音效`.
+- Added scene-based music routing: ready/pre-start screens use `MainMenuPvZ1.ogg`, and day lawn gameplay switches to `GrasswalkPvZ1.ogg`.
+- Extended audio debug state and browser verification so tests can assert `musicScene` and `musicPath`.
+- Added `tests/browser-ready-music-actions.json` for the ready-state music regression.
+- Ran `npm test`: PASS, 63 tests.
+- Ran `node scripts/verify-browser.js http://localhost:5173 tests/browser-ready-music-actions.json`: PASS, music path `assets/音效/MainMenuPvZ1.ogg`.
+- Ran `node scripts/verify-browser.js http://localhost:5173 tests/browser-actions.json`: PASS, music path `assets/音效/GrasswalkPvZ1.ogg`.
+- Screenshot checked: ready overlay and active day lawn gameplay both render correctly.

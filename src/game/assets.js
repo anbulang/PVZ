@@ -267,7 +267,8 @@ export const ASSET_PATHS = {
     shadow: ["assets/图片/植物大战僵尸素材包第二版/小部分组件/影子.png", "assets/图片/更多……/plantshadow32.png"],
   },
   music: {
-    background: ["assets/音效/ZombiesOnYourLawn.ogg"],
+    ready: ["assets/音效/MainMenuPvZ1.ogg"],
+    dayLawn: ["assets/音效/GrasswalkPvZ1.ogg"],
   },
   sfx: {
     plant: ["assets/音效/plant.ogg", "assets/音效/plant2.ogg"],
