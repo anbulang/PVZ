@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import {
   createOnlineRoom,
@@ -53,6 +54,14 @@ async function handleRequest({ request, response, rooms, root }) {
 }
 
 async function handleApi({ request, response, rooms, url }) {
+  if (request.method === "GET" && url.pathname === "/api/network") {
+    const lanUrls = lanInviteUrls(request);
+    return sendJson(response, 200, {
+      lanUrls,
+      preferredInviteBaseUrl: lanUrls[0] ?? null,
+    });
+  }
+
   if (request.method === "POST" && url.pathname === "/api/rooms") {
     const body = await readJson(request);
     const room = createUniqueRoom(rooms);
@@ -140,6 +149,37 @@ function createUniqueRoom(rooms) {
 function sendJson(response, status, payload) {
   response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
   response.end(JSON.stringify(payload));
+}
+
+function lanInviteUrls(request) {
+  const port = requestPort(request);
+  return lanAddresses().map((address) => `http://${address}${port}`);
+}
+
+function lanAddresses() {
+  const addresses = [];
+  for (const entries of Object.values(os.networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      if (entry.family !== "IPv4" || entry.internal || entry.address.startsWith("169.254.")) continue;
+      addresses.push(entry.address);
+    }
+  }
+  return [...new Set(addresses)].sort(compareLanAddresses);
+}
+
+function compareLanAddresses(left, right) {
+  return lanAddressScore(left) - lanAddressScore(right) || left.localeCompare(right);
+}
+
+function lanAddressScore(address) {
+  if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(address)) return 0;
+  return 1;
+}
+
+function requestPort(request) {
+  const host = request.headers.host ?? "";
+  const match = host.match(/:(\d+)$/);
+  return match ? `:${match[1]}` : "";
 }
 
 function setCorsHeaders(response) {

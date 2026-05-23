@@ -60,6 +60,22 @@ test("online HTTP server serves the browser client", async (t) => {
   assert.match(response.headers.get("content-type"), /text\/html/);
 });
 
+test("online HTTP server exposes non-loopback invite addresses", async (t) => {
+  const server = createOnlineHttpServer({ rootDir: process.cwd(), tickMs: 0 });
+  await listen(server);
+  t.after(() => close(server));
+
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/api/network`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(Array.isArray(payload.lanUrls), true);
+  assert.equal(payload.lanUrls.every((url) => /^http:\/\/(?!127\.0\.0\.1|localhost)/.test(url)), true);
+  if (payload.preferredInviteBaseUrl) {
+    assert.equal(payload.lanUrls.includes(payload.preferredInviteBaseUrl), true);
+  }
+});
+
 async function postJson(url, body) {
   const response = await fetch(url, {
     method: "POST",

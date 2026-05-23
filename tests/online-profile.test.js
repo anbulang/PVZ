@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DEFAULT_AVATAR_ID, loadPlayerProfile, normalizePlayerProfile, savePlayerProfile } from "../src/online/profile.js";
-import { gameUrl, nextViewState, roomUrl, viewUrl } from "../src/online/app-flow.js";
+import { gameUrl, inviteUrl, nextViewState, roomUrl, viewUrl } from "../src/online/app-flow.js";
 
 test("player profile normalizes names avatars and timestamps", () => {
   assert.deepEqual(normalizePlayerProfile({ playerName: "  Chaucer Mini  ", avatarId: "cone" }, 1779420000000), {
@@ -41,6 +41,26 @@ test("view URL helpers preserve room codes", () => {
   assert.equal(viewUrl("/index.html", "login"), "/index.html?view=login");
   assert.equal(roomUrl("/index.html", "room"), "/index.html?view=room&room=ROOM");
   assert.equal(gameUrl("/index.html", "room"), "/index.html?view=game&room=ROOM");
+});
+
+test("invite URL prefers LAN addresses when opened from loopback", () => {
+  const networkInfo = { preferredInviteBaseUrl: "http://192.168.2.15:5191" };
+
+  assert.equal(
+    inviteUrl("/", "rk4v", { href: "http://127.0.0.1:5191/?view=room&room=RK4V", hostname: "127.0.0.1" }, networkInfo),
+    "http://192.168.2.15:5191/?view=room&room=RK4V",
+  );
+  assert.equal(
+    inviteUrl("/", "rk4v", { href: "http://localhost:5191/?view=room&room=RK4V", hostname: "localhost" }, networkInfo),
+    "http://192.168.2.15:5191/?view=room&room=RK4V",
+  );
+});
+
+test("invite URL keeps current host when opened from a reachable address", () => {
+  assert.equal(
+    inviteUrl("/", "rk4v", { href: "http://192.168.2.15:5191/?view=room&room=RK4V", hostname: "192.168.2.15" }, { preferredInviteBaseUrl: "http://10.0.0.2:5191" }),
+    "http://192.168.2.15:5191/?view=room&room=RK4V",
+  );
 });
 
 test("login view keeps pending room codes for invite links", () => {

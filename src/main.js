@@ -5,7 +5,7 @@ import { renderGame } from "./game/render.js?v=20260519-tempo1";
 import { createGameState, serializeGameState } from "./game/state.js?v=20260519-tempo1";
 import { updateGame } from "./game/systems.js?v=20260519-tempo1";
 import { createOnlineClient } from "./online/client.js?v=20260522-bugfix1";
-import { gameUrl, nextViewState, roomUrl, viewUrl } from "./online/app-flow.js?v=20260522-flow1";
+import { gameUrl, inviteUrl, nextViewState, roomUrl, viewUrl } from "./online/app-flow.js?v=20260523-invite1";
 import { loadPlayerProfile, savePlayerProfile } from "./online/profile.js?v=20260522-flow1";
 
 const appShell = document.querySelector("#app-shell");
@@ -112,14 +112,31 @@ function bindAppFlowControls() {
       showRoomMessage("创建或加入房间后再复制邀请链接。");
       return;
     }
-    const inviteUrl = new URL(roomUrl(location.pathname, online.roomCode), location.href).href;
-    const writePromise = navigator.clipboard?.writeText?.(inviteUrl);
-    if (!writePromise) {
-      showRoomMessage(inviteUrl);
-      return;
-    }
-    writePromise.then(() => showRoomMessage("邀请链接已复制。")).catch(() => showRoomMessage(inviteUrl));
+    buildInviteUrl(online.roomCode).then(copyInviteUrl).catch(() => showRoomMessage("邀请链接生成失败，请刷新后重试。"));
   });
+}
+
+async function buildInviteUrl(roomCode) {
+  return inviteUrl(location.pathname, roomCode, location, await fetchNetworkInfo());
+}
+
+async function fetchNetworkInfo() {
+  try {
+    const response = await fetch(new URL("/api/network", location.href), { cache: "no-store" });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function copyInviteUrl(url) {
+  const writePromise = navigator.clipboard?.writeText?.(url);
+  if (!writePromise) {
+    showRoomMessage(url);
+    return;
+  }
+  writePromise.then(() => showRoomMessage("邀请链接已复制。")).catch(() => showRoomMessage(url));
 }
 
 function handleLogin(event) {
