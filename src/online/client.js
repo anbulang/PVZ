@@ -166,7 +166,9 @@ export function createOnlineClient({
       return;
     }
     if (message.type === "error") {
-      setStatus(`联机失败：${message.message ?? message.code}`);
+      const error = new Error(serverErrorMessage(message));
+      rejectRoomWaiters(error);
+      setStatus(`联机失败：${error.message}`);
     }
   }
 
@@ -185,7 +187,7 @@ export function createOnlineClient({
         if (index >= 0) roomWaiters.splice(index, 1);
         reject(new Error("等待房间快照超时"));
       }, 2500);
-      const waiter = { predicate, resolve, timeout };
+      const waiter = { predicate, resolve, reject, timeout };
       roomWaiters.push(waiter);
     });
   }
@@ -196,6 +198,14 @@ export function createOnlineClient({
       clearTimeout(waiter.timeout);
       roomWaiters.splice(roomWaiters.indexOf(waiter), 1);
       waiter.resolve(room);
+    }
+  }
+
+  function rejectRoomWaiters(error) {
+    for (const waiter of [...roomWaiters]) {
+      clearTimeout(waiter.timeout);
+      roomWaiters.splice(roomWaiters.indexOf(waiter), 1);
+      waiter.reject(error);
     }
   }
 
@@ -264,6 +274,11 @@ export function createOnlineClient({
     clientSequence += 1;
     return clientSequence;
   }
+}
+
+function serverErrorMessage(message) {
+  if (message.code === "room_not_found") return "房间不存在或已失效";
+  return message.message ?? message.code ?? "未知错误";
 }
 
 export function webSocketUrlForLocation(locationLike = globalThis.location) {

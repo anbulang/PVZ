@@ -262,6 +262,24 @@ test("online client can defer invite auto join until a profile is saved", async 
   assert.equal(socket.sent.some((message) => message.type === "joinRoom"), false);
 });
 
+test("online client reports missing rooms instead of timing out", async () => {
+  const socket = new RejectingJoinSocket();
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  await assert.rejects(
+    () => client.joinRoom("missing", "zombie", { playerName: "Zombie Two", avatarId: "cone" }),
+    /房间不存在或已失效/,
+  );
+});
+
 test("online client notifies online changes after hydrate room and game snapshots", async () => {
   const socket = new FakeSocket();
   const changes = [];
@@ -346,6 +364,19 @@ class FakeSocket {
 
   emitMessage(message) {
     this.emit("message", { data: JSON.stringify(message) });
+  }
+}
+
+class RejectingJoinSocket extends FakeSocket {
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "client-test" }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "error", code: "room_not_found", message: "room not found" }));
+    }
   }
 }
 
