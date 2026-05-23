@@ -3,15 +3,96 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>花园攻防本地双人版</title>
+    <title>花园攻防在线双人版</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./src/styles.css?v=20260519-tempo1" />
+    <link rel="stylesheet" href="./src/styles.css?v=20260522-ws-ui1" />
   </head>
   <body>
-    <main class="game-shell">
-      <canvas id="game" width="1280" height="720" aria-label="本地双人横向泳道塔防游戏"></canvas>
-      <p id="screen-reader-state" class="sr-only" aria-live="polite"></p>
+    <main id="app-shell" class="app-shell" data-view="login">
+      <section id="login-view" class="app-view login-view" aria-labelledby="login-title">
+        <form id="login-form" class="login-panel">
+          <p class="eyebrow">在线花园</p>
+          <h1 id="login-title">选择你的园丁身份</h1>
+          <label class="field-stack" for="player-name">
+            <span>昵称</span>
+            <input id="player-name" name="playerName" type="text" maxlength="16" autocomplete="nickname" placeholder="小向日葵" />
+          </label>
+          <fieldset class="avatar-picker" aria-label="头像">
+            <label class="avatar-option">
+              <input id="avatar-sunflower" type="radio" name="avatarId" value="sunflower" checked />
+              <span>向日葵</span>
+            </label>
+            <label class="avatar-option">
+              <input id="avatar-peashooter" type="radio" name="avatarId" value="peashooter" />
+              <span>豌豆射手</span>
+            </label>
+            <label class="avatar-option">
+              <input id="avatar-cone" type="radio" name="avatarId" value="cone" />
+              <span>路障僵尸</span>
+            </label>
+          </fieldset>
+          <button id="login-continue" type="button">进入房间</button>
+        </form>
+      </section>
+
+      <section id="room-view" class="app-view room-view" aria-labelledby="room-title">
+        <div class="room-card">
+          <div class="room-card-header">
+            <p class="eyebrow">对战大厅</p>
+            <h1 id="room-title">准备一场花园攻防</h1>
+          </div>
+          <label class="field-stack" for="room-name">
+            <span>房间名称</span>
+            <input id="room-name" name="roomName" type="text" maxlength="18" placeholder="今晚的后院" />
+          </label>
+          <div class="room-actions">
+            <button id="room-create" type="button">创建房间</button>
+            <label class="field-stack compact-field" for="room-code-entry">
+              <span>房间码</span>
+              <input id="room-code-entry" name="roomCode" type="text" inputmode="latin" maxlength="6" placeholder="ABC123" />
+            </label>
+            <button id="room-join" type="button">加入房间</button>
+          </div>
+          <div class="seat-grid" aria-label="玩家席位">
+            <article class="seat-card" data-side="plant">
+              <strong>植物方</strong>
+              <span>等待加入</span>
+            </article>
+            <article class="seat-card" data-side="zombie">
+              <strong>僵尸方</strong>
+              <span>等待加入</span>
+            </article>
+          </div>
+          <div class="room-footer">
+            <button id="room-copy-link" type="button">复制邀请链接</button>
+            <button id="room-ready" type="button">准备开始</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="game-view" class="app-view game-view" aria-label="游戏对战">
+        <div class="game-shell">
+          <section id="online-panel" class="online-panel" aria-label="在线房间控制">
+            <div class="online-state">
+              <strong id="online-status">本地双人</strong>
+              <span id="online-room-badge"></span>
+            </div>
+            <button id="online-host" type="button">创建房间</button>
+            <input id="online-room-code" type="text" inputmode="latin" maxlength="6" placeholder="房间码" aria-label="房间码" />
+            <select id="online-side" aria-label="控制阵营">
+              <option value="plant">植物方</option>
+              <option value="zombie">僵尸方</option>
+            </select>
+            <button id="online-join" type="button">加入</button>
+            <button id="online-ready" type="button" hidden>准备</button>
+            <button id="online-play-again" type="button" hidden>再来一局</button>
+            <span id="online-detail" class="online-detail"></span>
+          </section>
+          <canvas id="game" width="1280" height="720" aria-label="在线双人横向泳道塔防游戏"></canvas>
+          <p id="screen-reader-state" class="sr-only" aria-live="polite"></p>
+        </div>
+      </section>
     </main>
-    <script type="module" src="./src/main.js?v=20260519-tempo1"></script>
+    <script type="module" src="./src/main.js?v=20260522-ws-ui1"></script>
   </body>
 </html>

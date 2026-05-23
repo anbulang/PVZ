@@ -1,41 +1,41 @@
-# PVZ Local Versus Rules Implementation Plan
+# PVZ 本地双人对战规则实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **给 agentic workers：** 必须使用 `superpowers:subagent-driven-development`（推荐）或 `superpowers:executing-plans` 按任务逐项执行。本计划使用 checkbox（`- [ ]`）追踪进度。
 
-**Goal:** Remove automatic zombie waves and make zombie pressure come from player-controlled local-versus deployment.
+**目标：** 移除自动僵尸波次，让僵尸压力完全来自本地双人模式中僵尸玩家的手动投放。
 
-**Architecture:** Keep simulation state in `state.js`/`systems.js`, command mutations in `commands.js`, and rendering unchanged except for existing serialized director fields. The director object becomes a pressure/debug model instead of an automatic spawner.
+**架构：** 继续由 `state.js` / `systems.js` 保存和推进模拟状态，由 `commands.js` 执行命令突变。渲染层基本不改，只保留现有 director 序列化字段。`director` 从自动刷怪器调整为压力和调试模型。
 
-**Tech Stack:** JavaScript ES modules, Canvas 2D, Node `node:test`, Playwright browser verification.
+**技术栈：** JavaScript ES modules、Canvas 2D、Node `node:test`、Playwright 浏览器验证。
 
 ---
 
-## Files
+## 文件结构
 
-- Modify `src/game/config.js`: add zombie brain recovery constants.
-- Modify `src/game/state.js`: add `director.autoWaves` and `director.manualDeployCount`; serialize them.
-- Modify `src/game/commands.js`: increment manual deploy count and threat on manual zombie deployment.
-- Modify `src/game/systems.js`: remove automatic warning/spawn behavior; compute pressure from live zombie state.
-- Modify `tests/systems.test.js`: replace auto-wave tests with local-versus pressure tests.
-- Modify `tests/browser-actions.json`: stop expecting `minWaveCount`.
-- Run existing browser scenarios to ensure visual/animation behavior still works.
+- 修改 `src/game/config.js`：增加僵尸脑力恢复常量。
+- 修改 `src/game/state.js`：增加并序列化 `director.autoWaves` 和 `director.manualDeployCount`。
+- 修改 `src/game/commands.js`：手动投放僵尸时增加投放计数和压力值。
+- 修改 `src/game/systems.js`：移除自动 warning / spawn 行为，并根据场上僵尸计算压力。
+- 修改 `tests/systems.test.js`：用本地对战压力测试替换自动波次测试。
+- 修改 `tests/browser-actions.json`：移除 `minWaveCount` 期望。
+- 运行既有浏览器场景，确认视觉和动画流程不退化。
 
-## Task 1: Stop Automatic Zombie Waves
+## 任务 1：停止自动僵尸波次
 
-- [ ] Write a failing system test proving `updateGame()` does not spawn zombies after a long started simulation.
-- [ ] Replace `updateDirector()` automatic warning/spawn code with pressure-only logic.
-- [ ] Verify the new test passes.
+- [ ] 写一个失败系统测试，证明 `updateGame()` 在已开始的长时间模拟后不会自动生成僵尸。
+- [ ] 将 `updateDirector()` 的自动 warning / spawn 逻辑替换为只计算压力的逻辑。
+- [ ] 确认新增测试通过。
 
-## Task 2: Track Manual Zombie Pressure
+## 任务 2：记录手动僵尸压力
 
-- [ ] Write a failing system test proving manual `deployZombie` increments `manualDeployCount`.
-- [ ] Update command/state serialization to expose `manualDeployCount` and `autoWaves: false`.
-- [ ] Make manual deployment nudge pressure upward.
-- [ ] Verify the new test passes.
+- [ ] 写一个失败系统测试，证明手动 `deployZombie` 会增加 `manualDeployCount`。
+- [ ] 更新命令和状态序列化，暴露 `manualDeployCount` 和 `autoWaves: false`。
+- [ ] 手动投放僵尸时适度提高压力值。
+- [ ] 确认新增测试通过。
 
-## Task 3: Keep Browser Main Flow Green
+## 任务 3：保持浏览器主流程通过
 
-- [ ] Remove `minWaveCount` from `tests/browser-actions.json`.
-- [ ] Run `npm test`.
-- [ ] Run `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`.
-- [ ] Run layout and visual-polish browser verification.
+- [ ] 从 `tests/browser-actions.json` 中移除 `minWaveCount`。
+- [ ] 运行 `npm test`。
+- [ ] 运行 `node scripts/verify-browser.js http://localhost:5174 tests/browser-actions.json`。
+- [ ] 运行布局和视觉精修相关浏览器验证。

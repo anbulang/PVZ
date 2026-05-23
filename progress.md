@@ -425,3 +425,28 @@ Original prompt: [@superpowers](plugin://superpowers@openai-curated) 做一款�
 - Ran `node scripts/verify-browser.js http://localhost:5173 tests/browser-ready-music-actions.json`: PASS, music path `assets/音效/MainMenuPvZ1.ogg`.
 - Ran `node scripts/verify-browser.js http://localhost:5173 tests/browser-actions.json`: PASS, music path `assets/音效/GrasswalkPvZ1.ogg`.
 - Screenshot checked: ready overlay and active day lawn gameplay both render correctly.
+
+## 2026-05-21 在线对战基础
+
+- 在现有隔离 Codex worktree 中创建分支 `codex/online-battle`。
+- 新增零依赖 LAN 在线房间服务器，服务器持有权威游戏状态、双人植物/僵尸阵营分配、命令校验、server tick、快照和静态文件服务。
+- 新增浏览器在线控件，支持创建房间、输入房间码加入、选择植物方或僵尸方。
+- 输入处理改为在线模式下 selection 保持本地，真实 gameplay command 发送到房间服务器。
+- 新增 `npm run online -- <port>` 用于 LAN 对战，新增 `npm run verify:online-browser -- <url>` 用于双页面在线验证。
+- 增加 room 行为、HTTP endpoints、本地在线 selection 和阵营命令过滤的 TDD 覆盖。
+- 运行 `npm test`：通过，72 个测试。由于 sandbox 会阻止本地端口绑定，通过的完整测试是在已批准的 sandbox escalation 下执行。
+- 运行 `node scripts/verify-browser.js http://127.0.0.1:5191 tests/browser-actions.json`：通过，无 console 错误和缺失素材。
+- 运行 `node scripts/verify-online-browser.js http://127.0.0.1:5191`：通过。两个 Chromium 页面加入房间 `QOBV`，植物方放置 `peashooter`，僵尸方投放 `basic`，两端收到一致的植物和僵尸实体。
+
+## 2026-05-22 WebSocket 在线对战完整体验
+
+- 使用 `ws` 将 LAN 在线对战从 HTTP polling 升级为 WebSocket 房间传输，HTTP 静态服务继续保留。
+- 新增显式房间阶段：`lobby`、`ready`、`playing`、`pausedForReconnect`、`finished`。
+- 新增双方准备、60 秒同 `clientId` 重连、掉线暂停、超时判负和双方确认再来一局。
+- 更新浏览器房间面板，显示在线阶段、准备状态、重连暂停和再来一局控件。
+- 浏览器在线客户端改为 `/ws`，保留本地卡牌 selection，只把真实 gameplay command 发送到服务器。
+- 已验证 room core、HTTP 兼容入口、WebSocket 协议、现有本地流程、主浏览器回归和双浏览器在线流程。
+- 运行 `npm test`：通过，83 个测试。由于 sandbox 会阻止本地端口监听，完整测试使用已批准的 sandbox escalation 执行。
+- 运行 `node scripts/verify-browser.js http://127.0.0.1:5191 tests/browser-actions.json`：通过，无 console 错误、无缺失素材，`director.autoWaves === false`，`manualDeployCount === 1`。
+- 运行 `node scripts/verify-online-browser.js http://127.0.0.1:5191`：通过。两个 Chromium 页面加入房间 `TAYN`，双方 `ready: true`，植物方放置 `peashooter`，僵尸方投放 `basic`，刷新僵尸页面后恢复 `zombie` 身份，两端实体一致。
+- 运行 `git diff --check`：通过。

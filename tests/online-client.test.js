@@ -1,0 +1,510 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import { createGameState } from "../src/game/state.js";
+import {
+  applyLocalSelectionCommand,
+  applyOnlineSnapshot,
+  applyRoomSnapshot,
+  canSendOnlineCommand,
+  createOnlineClient,
+  loadOnlineIdentity,
+  onlinePanelViewModel,
+  roomControlState,
+  roomMatchesJoinRequest,
+  saveOnlineIdentity,
+  webSocketUrlForLocation,
+} from "../src/online/client.js";
+import { copyText } from "../src/online/clipboard.js";
+
+test("index html exposes the online app shell views", () => {
+  const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const requiredIds = [
+    "login-view",
+    "player-name",
+    "avatar-sunflower",
+    "login-continue",
+    "room-view",
+    "room-name",
+    "room-code-entry",
+    "room-create",
+    "room-join",
+    "room-copy-link",
+    "room-ready",
+    "game-view",
+    "online-panel",
+    "game",
+  ];
+
+  for (const id of requiredIds) {
+    assert.match(html, new RegExp(`id=["']${id}["']`), `missing #${id}`);
+  }
+  assert.match(html, /id=["']login-continue["'][^>]*type=["']button["']/, "#login-continue must not submit before Task 4 wiring");
+  assert.match(html, /class=["']seat-card["'][^>]*data-side=["']plant["']/, "missing plant seat hook");
+  assert.match(html, /class=["']seat-card["'][^>]*data-side=["']zombie["']/, "missing zombie seat hook");
+});
+
+test("game view hides legacy create and join controls", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const legacyControls = ["online-host", "online-room-code", "online-side", "online-join"];
+
+  for (const id of legacyControls) {
+    assert.match(css, new RegExp(`#game-view\\s+#${id}`), `missing #game-view #${id} hiding selector`);
+  }
+  assert.match(css, /#game-view[\s\S]*display:\s*none\s*;/, "legacy game controls must be display none");
+});
+
+test("room message spans footer columns and wraps invite URLs", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.room-message\s*{[\s\S]*grid-column:\s*1\s*\/\s*-1\s*;/, "room message should span footer columns");
+  assert.match(css, /\.room-message\s*{[\s\S]*overflow-wrap:\s*anywhere\s*;/, "room message should wrap long invite URLs");
+});
+
+test("room buttons have visible disabled styling", () => {
+  const css = fs.readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+  assert.match(css, /\.room-card button:disabled\s*{[\s\S]*opacity:\s*0\.[0-9]+;/, "disabled room buttons should be visibly dimmed");
+  assert.match(css, /\.room-card button:disabled\s*{[\s\S]*cursor:\s*not-allowed;/, "disabled room buttons should show a disabled cursor");
+});
+
+test("main flow creates a visible room message target when markup omits it", () => {
+  const script = fs.readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
+
+  assert.match(script, /ensureRoomMessage/, "main flow should ensure #room-message exists");
+  assert.match(script, /document\.createElement\("p"\)/, "room message should be created dynamically");
+  assert.match(script, /roomMessage\.id = "room-message"/, "created message should use the expected id");
+  assert.match(script, /aria-live", "polite"/, "created message should announce room feedback");
+});
+
+test("online snapshot preserves the local device selection", () => {
+  const state = createGameState();
+  const serverState = createGameState();
+  serverState.resources.plant.sun = 75;
+  serverState.status = "服务器状态";
+  const localSelection = { side: "plant", kind: "plant", type: "peashooter" };
+
+  applyOnlineSnapshot(state, {
+    online: { roomCode: "ROOM4", clientId: "plant-device", side: "plant", peerCount: 2 },
+    state: serverState,
+  }, localSelection);
+
+  assert.equal(state.resources.plant.sun, 75);
+  assert.equal(state.status, "服务器状态");
+  assert.deepEqual(state.selection, localSelection);
+  assert.deepEqual(state.online, { roomCode: "ROOM4", clientId: "plant-device", side: "plant", peerCount: 2 });
+});
+
+test("local online selection is restricted to the assigned side", () => {
+  const state = createGameState();
+  const zombieResult = applyLocalSelectionCommand(state, "plant", null, { type: "select", side: "zombie", kind: "zombie", unitType: "basic" });
+  assert.equal(zombieResult.accepted, false);
+  assert.equal(zombieResult.selection, null);
+  assert.match(state.status, /当前设备控制植物方/);
+
+  const plantResult = applyLocalSelectionCommand(state, "plant", null, { type: "select", side: "plant", kind: "plant", unitType: "peashooter" });
+  assert.equal(plantResult.accepted, true);
+  assert.deepEqual(plantResult.selection, { side: "plant", kind: "plant", type: "peashooter" });
+});
+
+test("online command send filter matches player sides", () => {
+  assert.equal(canSendOnlineCommand("plant", { type: "placePlant" }), true);
+  assert.equal(canSendOnlineCommand("plant", { type: "collectAllSun" }), true);
+  assert.equal(canSendOnlineCommand("plant", { type: "deployZombie" }), false);
+  assert.equal(canSendOnlineCommand("zombie", { type: "deployZombie" }), true);
+  assert.equal(canSendOnlineCommand("zombie", { type: "placePlant" }), false);
+  assert.equal(canSendOnlineCommand("zombie", { type: "togglePause" }), true);
+});
+
+test("websocket URL builder keeps the current host and uses /ws", () => {
+  assert.equal(webSocketUrlForLocation({ protocol: "http:", host: "192.168.2.15:5191" }), "ws://192.168.2.15:5191/ws");
+  assert.equal(webSocketUrlForLocation({ protocol: "https:", host: "game.example.test" }), "wss://game.example.test/ws");
+});
+
+test("client identity storage persists client id and room", () => {
+  const storage = new MapStorage();
+  saveOnlineIdentity(storage, { clientId: "client-a", roomCode: "ROOM", side: "plant" });
+  assert.deepEqual(loadOnlineIdentity(storage), { clientId: "client-a", roomCode: "ROOM", side: "plant" });
+});
+
+test("online room snapshot updates room metadata without replacing local selection", () => {
+  const state = createGameState();
+  const selection = { side: "plant", kind: "plant", type: "peashooter" };
+  applyRoomSnapshot(state, {
+    roomCode: "ROOM",
+    phase: "playing",
+    side: "plant",
+    peerCount: 2,
+    players: {
+      plant: { clientId: "plant-device", online: true, ready: true, playAgainReady: false, disconnectedAt: null },
+      zombie: { clientId: "zombie-device", online: true, ready: true, playAgainReady: false, disconnectedAt: null },
+    },
+  }, selection);
+
+  assert.equal(state.online.roomCode, "ROOM");
+  assert.equal(state.online.phase, "playing");
+  assert.deepEqual(state.selection, selection);
+});
+
+test("online panel view model exposes ready reconnect and play again states", () => {
+  const ready = onlinePanelViewModel({
+    roomCode: "ROOM",
+    phase: "ready",
+    side: "plant",
+    peerCount: 2,
+    players: {
+      plant: { ready: false, playAgainReady: false, online: true },
+      zombie: { ready: true, playAgainReady: false, online: true },
+    },
+  });
+  assert.equal(ready.phaseLabel, "等待准备");
+  assert.equal(ready.showReady, true);
+  assert.equal(ready.readyText, "准备");
+  assert.equal(ready.showPlayAgain, false);
+
+  const paused = onlinePanelViewModel({ roomCode: "ROOM", phase: "pausedForReconnect", side: "plant", reconnectRemainingMs: 55000 });
+  assert.equal(paused.phaseLabel, "等待重连");
+  assert.match(paused.detail, /55s/);
+
+  const finished = onlinePanelViewModel({
+    roomCode: "ROOM",
+    phase: "finished",
+    side: "zombie",
+    players: {
+      plant: { ready: false, playAgainReady: true, online: true },
+      zombie: { ready: false, playAgainReady: false, online: true },
+    },
+  });
+  assert.equal(finished.phaseLabel, "本局结束");
+  assert.equal(finished.showReady, false);
+  assert.equal(finished.showPlayAgain, true);
+  assert.equal(finished.playAgainText, "再来一局");
+});
+
+test("online panel view model does not render undefined before joining a room", () => {
+  const pending = onlinePanelViewModel({ clientId: "client-a" });
+
+  assert.equal(pending.phaseLabel, "连接中");
+  assert.equal(pending.statusText.includes("undefined"), false);
+  assert.equal(pending.roomBadge, "");
+  assert.equal(pending.detail, "请选择创建房间或加入房间。");
+});
+
+test("room control state disables invalid room actions", () => {
+  assert.deepEqual(roomControlState(null), {
+    canCreate: true,
+    canJoin: true,
+    canCopyInvite: false,
+    canReady: false,
+  });
+  assert.deepEqual(roomControlState({ roomCode: "ROOM", phase: "lobby" }), {
+    canCreate: false,
+    canJoin: false,
+    canCopyInvite: true,
+    canReady: false,
+  });
+  assert.deepEqual(roomControlState({ roomCode: "ROOM", phase: "ready" }), {
+    canCreate: false,
+    canJoin: false,
+    canCopyInvite: true,
+    canReady: true,
+  });
+});
+
+test("client join matcher accepts server-assigned remaining side", () => {
+  assert.equal(roomMatchesJoinRequest({ roomCode: "ROOM", side: "zombie" }, "room"), true);
+  assert.equal(roomMatchesJoinRequest({ roomCode: "OTHER", side: "zombie" }, "room"), false);
+});
+
+test("online client sends player profiles when hosting and joining rooms", async () => {
+  const socket = new FakeSocket();
+  const state = createGameState();
+  const client = createOnlineClient({
+    state,
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  await client.hostRoom("plant", { playerName: "Plant One", avatarId: "sunflower" });
+  await client.joinRoom("room", "zombie", { playerName: "Zombie Two", avatarId: "cone" });
+
+  assert.deepEqual(socket.sent.find((message) => message.type === "createRoom"), {
+    type: "createRoom",
+    side: "plant",
+    profile: { playerName: "Plant One", avatarId: "sunflower" },
+  });
+  assert.deepEqual(socket.sent.find((message) => message.type === "joinRoom"), {
+    type: "joinRoom",
+    roomCode: "ROOM",
+    side: "zombie",
+    profile: { playerName: "Zombie Two", avatarId: "cone" },
+    clientId: "client-test",
+  });
+});
+
+test("online client exposes hydrated online room state", () => {
+  const state = createGameState();
+  const client = createOnlineClient({
+    state,
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: null,
+    historyLike: null,
+  });
+
+  assert.equal(client.getOnline(), null);
+
+  client.hydrateSnapshot({
+    state: createGameState(),
+    online: {
+      roomCode: "ROOM",
+      phase: "ready",
+      side: "plant",
+      peerCount: 2,
+      players: {},
+    },
+  });
+
+  assert.equal(client.getOnline().roomCode, "ROOM");
+});
+
+test("online client can defer invite auto join until a profile is saved", async () => {
+  const socket = new FakeSocket();
+  createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "?room=ROOM" },
+    historyLike: null,
+    createSocket: () => socket,
+    autoJoin: false,
+  });
+
+  await flushMicrotasks();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(socket.sent.some((message) => message.type === "joinRoom"), false);
+});
+
+test("online client reports missing rooms instead of timing out", async () => {
+  const socket = new RejectingJoinSocket();
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  await assert.rejects(
+    () => client.joinRoom("missing", "zombie", { playerName: "Zombie Two", avatarId: "cone" }),
+    /房间不存在或已失效/,
+  );
+});
+
+test("online client adopts reassigned room client ids after identity collision", async () => {
+  const storage = new MapStorage();
+  const socket = new ReassignedJoinSocket();
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+  });
+
+  const joined = await client.joinRoom("room", "zombie", { playerName: "Zombie Two", avatarId: "cone" });
+
+  assert.equal(joined.online.clientId, "client-zombie");
+  assert.equal(client.getOnline().clientId, "client-zombie");
+  assert.equal(loadOnlineIdentity(storage).clientId, "client-zombie");
+});
+
+test("online client notifies online changes after hydrate room and game snapshots", async () => {
+  const socket = new FakeSocket();
+  const changes = [];
+  const client = createOnlineClient({
+    state: createGameState(),
+    localDispatch: () => {},
+    root: null,
+    storage: null,
+    locationLike: { protocol: "http:", host: "localhost:5173", pathname: "/", search: "" },
+    historyLike: null,
+    createSocket: () => socket,
+    onOnlineChange: (online) => changes.push(online ? { roomCode: online.roomCode, phase: online.phase } : online),
+  });
+
+  client.hydrateSnapshot({
+    state: createGameState(),
+    online: {
+      roomCode: "ROOM",
+      phase: "ready",
+      side: "plant",
+      peerCount: 2,
+      players: {},
+    },
+  });
+  await client.hostRoom("plant", { playerName: "Plant One", avatarId: "sunflower" });
+  socket.emitMessage({ type: "gameSnapshot", state: createGameState() });
+
+  assert.deepEqual(changes, [
+    { roomCode: "ROOM", phase: "ready" },
+    { roomCode: "ROOM", phase: "ready" },
+    { roomCode: "ROOM", phase: "ready" },
+  ]);
+});
+
+test("copy text uses clipboard API when available", async () => {
+  const writes = [];
+
+  const result = await copyText("http://192.168.2.15:5191/?view=room&room=ABCD", {
+    navigator: { clipboard: { writeText: async (text) => writes.push(text) } },
+    document: null,
+  });
+
+  assert.deepEqual(writes, ["http://192.168.2.15:5191/?view=room&room=ABCD"]);
+  assert.deepEqual(result, { ok: true, method: "clipboard" });
+});
+
+test("copy text falls back to an automatic textarea copy", async () => {
+  const copied = [];
+  const bodyNodes = [];
+  const documentLike = {
+    body: {
+      appendChild: (node) => bodyNodes.push(node),
+      removeChild: (node) => bodyNodes.splice(bodyNodes.indexOf(node), 1),
+    },
+    createElement: () => ({
+      value: "",
+      style: {},
+      setAttribute() {},
+      focus() {},
+      select() {
+        copied.push(this.value);
+      },
+    }),
+    execCommand: (command) => command === "copy",
+  };
+
+  const result = await copyText("http://192.168.2.15:5191/?view=room&room=ABCD", {
+    navigator: {},
+    document: documentLike,
+  });
+
+  assert.deepEqual(copied, ["http://192.168.2.15:5191/?view=room&room=ABCD"]);
+  assert.equal(bodyNodes.length, 0);
+  assert.deepEqual(result, { ok: true, method: "fallback" });
+});
+
+class MapStorage {
+  constructor() {
+    this.map = new Map();
+  }
+
+  getItem(key) {
+    return this.map.has(key) ? this.map.get(key) : null;
+  }
+
+  setItem(key, value) {
+    this.map.set(key, value);
+  }
+}
+
+class FakeSocket {
+  static OPEN = 1;
+
+  constructor() {
+    this.readyState = FakeSocket.OPEN;
+    this.sent = [];
+    this.listeners = new Map();
+    queueMicrotask(() => this.emit("open", {}));
+  }
+
+  addEventListener(type, listener) {
+    const listeners = this.listeners.get(type) ?? [];
+    listeners.push(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "client-test" }));
+    }
+    if (message.type === "createRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "roomSnapshot", room: fakeRoomSnapshot({ roomCode: "ROOM", side: message.side }) }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "roomSnapshot", room: fakeRoomSnapshot({ roomCode: message.roomCode, side: message.side }) }));
+    }
+  }
+
+  emit(type, event) {
+    for (const listener of this.listeners.get(type) ?? []) listener(event);
+  }
+
+  emitMessage(message) {
+    this.emit("message", { data: JSON.stringify(message) });
+  }
+}
+
+class RejectingJoinSocket extends FakeSocket {
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "client-test" }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({ type: "error", code: "room_not_found", message: "room not found" }));
+    }
+  }
+}
+
+class ReassignedJoinSocket extends FakeSocket {
+  send(raw) {
+    const message = JSON.parse(raw);
+    this.sent.push(message);
+    if (message.type === "hello") {
+      queueMicrotask(() => this.emitMessage({ type: "welcome", clientId: "same-client" }));
+    }
+    if (message.type === "joinRoom") {
+      queueMicrotask(() => this.emitMessage({
+        type: "roomSnapshot",
+        clientId: "client-zombie",
+        room: fakeRoomSnapshot({ roomCode: message.roomCode, side: "zombie" }),
+      }));
+    }
+  }
+}
+
+function fakeRoomSnapshot({ roomCode, side }) {
+  return {
+    roomCode,
+    phase: "ready",
+    side,
+    peerCount: 2,
+    commandSequence: 0,
+    reconnectTimeoutMs: 60000,
+    reconnectRemainingMs: null,
+    players: {
+      plant: { clientId: "plant-device", online: true, ready: false, playAgainReady: false, profile: null, disconnectedAt: null },
+      zombie: { clientId: "zombie-device", online: true, ready: false, playAgainReady: false, profile: null, disconnectedAt: null },
+    },
+  };
+}
+
+async function flushMicrotasks() {
+  for (let i = 0; i < 6; i += 1) await Promise.resolve();
+}

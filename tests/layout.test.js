@@ -86,6 +86,17 @@ test("clicking sun counter collects all visible sun", () => {
   assert.equal(command.type, "collectAllSun");
 });
 
+test("commandFromPoint can use a local online selection", () => {
+  const state = createGameState();
+  const point = {
+    x: GRID.left + GRID.cellWidth * 1.5,
+    y: GRID.top + GRID.cellHeight * 2.5,
+  };
+  const command = commandFromPoint(state, point, { selection: { side: "plant", kind: "plant", type: "peashooter" } });
+  assert.deepEqual(command, { type: "placePlant", plantType: "peashooter", row: 2, col: 1 });
+  assert.equal(state.selection, null);
+});
+
 function inside(inner, outer) {
   return inner.x >= outer.x && inner.x + inner.w <= outer.x + outer.w && inner.y >= outer.y && inner.y + inner.h <= outer.y + outer.h;
 }

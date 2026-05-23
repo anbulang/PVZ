@@ -88,6 +88,11 @@ test("visual polish generated assets are present", () => {
   ].forEach(assertExists);
 });
 
+test("login and room flow generated images are present", () => {
+  assert.equal(fs.existsSync("generated-assets/ui/login-hero.png"), true);
+  assert.equal(fs.existsSync("generated-assets/ui/room-panel-hero.png"), true);
+});
+
 test("visual polish assets are first-choice manifest paths", () => {
   assert.equal(ASSET_PATHS.ui.sun[0], GENERATED_ASSET_PATHS.ui.sun);
   assert.equal(ASSET_PATHS.ui.brainCounter[0], GENERATED_ASSET_PATHS.ui.resourceBrain);
